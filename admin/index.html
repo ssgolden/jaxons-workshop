@@ -691,7 +691,7 @@
                         <template x-for="(img, idx) in productForm.images" :key="idx">
                             <div class="image-preview">
                                 <img :src="img.url || img" alt="">
-                                <button class="icon-btn icon-btn-sm" @click="productForm.images.splice(idx, 1)">
+                                <button class="icon-btn icon-btn-sm" @click="removeProductImage(idx)">
                                     <span class="material-icons">close</span>
                                 </button>
                             </div>
@@ -1163,6 +1163,12 @@
                 },
 
                 resetProductForm() {
+                    (this.productForm?.images || []).forEach(image => {
+                        if (image?.isLocalPreview && image.url) {
+                            URL.revokeObjectURL(image.url);
+                        }
+                    });
+
                     this.productForm = {
                         name: '',
                         category: 'candles',
@@ -1175,6 +1181,7 @@
                         low_stock_threshold: 5,
                         status: 'active',
                         images: [],
+                        pendingImages: [],
                         metadata: {
                             featured: false,
                             bestseller: false
@@ -1182,15 +1189,32 @@
                     };
                 },
 
+                removeProductImage(index) {
+                    const [removedImage] = this.productForm.images.splice(index, 1);
+
+                    if (removedImage?.isLocalPreview) {
+                        if (removedImage.url) {
+                            URL.revokeObjectURL(removedImage.url);
+                        }
+
+                        const fileIndex = (this.productForm.pendingImages || []).findIndex(file => file.name === removedImage.name);
+                        if (fileIndex !== -1) {
+                            this.productForm.pendingImages.splice(fileIndex, 1);
+                        }
+                    }
+                },
+
                 handleImageUpload(event) {
                     const files = Array.from(event.target.files);
                     files.forEach(file => {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            this.productForm.images.push(e.target.result);
-                        };
-                        reader.readAsDataURL(file);
+                        this.productForm.pendingImages.push(file);
+                        this.productForm.images.push({
+                            url: URL.createObjectURL(file),
+                            name: file.name,
+                            isLocalPreview: true
+                        });
                     });
+                    event.target.value = '';
                 },
 
                 editProduct(product) {
@@ -1210,6 +1234,7 @@
                         low_stock_threshold: product.low_stock_threshold || 5,
                         status: product.status,
                         images: JSON.parse(product.images || '[]'),
+                        pendingImages: [],
                         metadata: {
                             featured: !!metadata.featured,
                             bestseller: !!metadata.bestseller
@@ -1220,11 +1245,25 @@
 
                 async saveProduct() {
                     try {
-                        const payload = {
-                            ...this.productForm,
-                            images: JSON.stringify(this.productForm.images),
-                            metadata: this.productForm.metadata
-                        };
+                        const formData = new FormData();
+                        const existingImages = (this.productForm.images || []).filter(img => !img.isLocalPreview);
+
+                        formData.append('name', this.productForm.name);
+                        formData.append('category', this.productForm.category);
+                        formData.append('price', this.productForm.price);
+                        formData.append('short_description', this.productForm.short_description || '');
+                        formData.append('description', this.productForm.description || '');
+                        formData.append('sku', this.productForm.sku || '');
+                        formData.append('inventory_quantity', this.productForm.inventory_quantity ?? 0);
+                        formData.append('track_inventory', this.productForm.track_inventory ? 'true' : 'false');
+                        formData.append('low_stock_threshold', this.productForm.low_stock_threshold ?? 5);
+                        formData.append('status', this.productForm.status || 'active');
+                        formData.append('images', JSON.stringify(existingImages));
+                        formData.append('metadata', JSON.stringify(this.productForm.metadata || {}));
+
+                        for (const file of this.productForm.pendingImages || []) {
+                            formData.append('images', file);
+                        }
 
                         const url = this.editingProduct
                             ? `${API_BASE}/products/${this.editingProduct.id}`
@@ -1232,10 +1271,7 @@
 
                         const res = await this.adminFetch(url, {
                             method: this.editingProduct ? 'PUT' : 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(payload)
+                            body: formData
                         });
 
                         const data = await res.json();

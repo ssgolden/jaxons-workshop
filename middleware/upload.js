@@ -12,8 +12,14 @@ if (!fs.existsSync(uploadDir)) {
 // Configure multer storage
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const productId = req.params.productId || req.body.productId || 'temp';
-        const productDir = path.join(uploadDir, productId.toString());
+        if (!req.uploadFolder) {
+            const routeProductId = req.params.id || req.params.productId || req.body.productId;
+            req.uploadFolder = routeProductId
+                ? routeProductId.toString()
+                : `tmp-${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+        }
+
+        const productDir = path.join(uploadDir, req.uploadFolder);
 
         if (!fs.existsSync(productDir)) {
             fs.mkdirSync(productDir, { recursive: true });
@@ -70,7 +76,7 @@ async function optimizeImages(req, res, next) {
             };
 
             const originalPath = file.path;
-            const productFolder = req.params.productId || req.body.productId || 'temp';
+            const productFolder = req.uploadFolder || req.params.id || req.params.productId || req.body.productId || 'temp';
             const imageSet = {
                 url: '',
                 thumb: '',

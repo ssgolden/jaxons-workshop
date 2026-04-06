@@ -5,6 +5,73 @@ const { queries, initDatabase } = require('../config/database');
 const { authMiddleware, roleMiddleware, loginWithEmail, loginWithPin } = require('../middleware/auth');
 const { upload, optimizeImages } = require('../middleware/upload');
 
+function parseJsonField(value, fallback) {
+    if (value === undefined || value === null || value === '') {
+        return fallback;
+    }
+
+    if (typeof value !== 'string') {
+        return value;
+    }
+
+    try {
+        return JSON.parse(value);
+    } catch {
+        return fallback;
+    }
+}
+
+function parseBoolean(value) {
+    if (typeof value === 'boolean') {
+        return value;
+    }
+
+    if (typeof value === 'number') {
+        return value !== 0;
+    }
+
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (['true', '1', 'yes', 'on'].includes(normalized)) {
+            return true;
+        }
+        if (['false', '0', 'no', 'off', ''].includes(normalized)) {
+            return false;
+        }
+    }
+
+    return Boolean(value);
+}
+
+function buildProductPayload(req) {
+    const rawBody = req.body || {};
+    const metadata = parseJsonField(rawBody.metadata, {});
+    const existingImages = parseJsonField(rawBody.images, []);
+    const uploadedImages = Array.isArray(req.optimizedFiles) ? req.optimizedFiles : [];
+    const productImages = [
+        ...(Array.isArray(existingImages) ? existingImages : []),
+        ...uploadedImages
+    ];
+
+    return {
+        name: rawBody.name,
+        description: rawBody.description || '',
+        short_description: rawBody.short_description || '',
+        price: rawBody.price,
+        compare_price: rawBody.compare_price,
+        cost: rawBody.cost,
+        sku: rawBody.sku || '',
+        barcode: rawBody.barcode || '',
+        category: rawBody.category,
+        inventory_quantity: rawBody.inventory_quantity,
+        track_inventory: parseBoolean(rawBody.track_inventory),
+        low_stock_threshold: rawBody.low_stock_threshold,
+        status: rawBody.status || 'active',
+        images: productImages,
+        metadata
+    };
+}
+
 // ===== AUTHENTICATION =====
 
 router.post('/login', async (req, res) => {
@@ -98,40 +165,18 @@ router.get('/products/:id', authMiddleware, (req, res) => {
 
 router.post('/products', authMiddleware, upload.array('images', 10), optimizeImages, (req, res) => {
     try {
-        let productData;
-
-        // Handle JSON body or FormData
-        if (req.headers['content-type']?.includes('application/json')) {
-            productData = req.body;
-        } else {
-            productData = {
-                ...req.body,
-                images: req.body.images ? JSON.parse(req.body.images) : []
-            };
-        }
+        const productData = buildProductPayload(req);
 
         const {
             name, description, short_description, price, compare_price, cost,
             sku, barcode, category, inventory_quantity, track_inventory,
-            low_stock_threshold, status, images
+            low_stock_threshold, status, images, metadata
         } = productData;
 
         // Validate required fields
         if (!name || !price || !category) {
             return res.status(400).json({ error: 'Name, price, and category are required' });
         }
-
-        // Use uploaded images or base64 images from JSON
-        let productImages = [];
-        if (req.optimizedFiles) {
-            productImages = req.optimizedFiles;
-        } else if (images && typeof images === 'string') {
-            productImages = JSON.parse(images);
-        } else if (Array.isArray(images)) {
-            productImages = images;
-        }
-
-        const metadata = productData.metadata ? (typeof productData.metadata === 'string' ? JSON.parse(productData.metadata) : productData.metadata) : {};
 
         const result = queries.createProduct.run(
             name,
@@ -147,7 +192,7 @@ router.post('/products', authMiddleware, upload.array('images', 10), optimizeIma
             track_inventory ? 1 : 0,
             parseInt(low_stock_threshold) || 5,
             status || 'active',
-            JSON.stringify(productImages),
+            JSON.stringify(images),
             JSON.stringify(metadata)
         );
 
@@ -158,7 +203,7 @@ router.post('/products', authMiddleware, upload.array('images', 10), optimizeIma
                 name,
                 category,
                 price: parseFloat(price),
-                images: productImages
+                images
             }
         });
     } catch (error) {
@@ -167,13 +212,14 @@ router.post('/products', authMiddleware, upload.array('images', 10), optimizeIma
     }
 });
 
-router.put('/products/:id', authMiddleware, (req, res) => {
+router.put('/products/:id', authMiddleware, upload.array('images', 10), optimizeImages, (req, res) => {
     try {
+        const productData = buildProductPayload(req);
         const {
             name, description, short_description, price, compare_price, cost,
             sku, barcode, category, inventory_quantity, track_inventory,
             low_stock_threshold, status, images, metadata
-        } = req.body;
+        } = productData;
 
         const result = queries.updateProduct.run(
             name,
@@ -189,7 +235,7 @@ router.put('/products/:id', authMiddleware, (req, res) => {
             track_inventory ? 1 : 0,
             parseInt(low_stock_threshold) || 5,
             status || 'active',
-            images || '[]',
+            JSON.stringify(Array.isArray(images) ? images : []),
             JSON.stringify(metadata || {}),
             req.params.id
         );
