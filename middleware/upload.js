@@ -35,11 +35,13 @@ const storage = multer.diskStorage({
 
 // File filter - only images
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|webp|gif/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
+    const allowedExtensions = new Set(['.jpeg', '.jpg', '.png', '.webp', '.gif']);
+    const extension = path.extname(file.originalname || '').toLowerCase();
+    const mimeType = (file.mimetype || '').toLowerCase();
+    const hasValidExtension = allowedExtensions.has(extension);
+    const hasValidMimeType = /^image\/(jpeg|jpg|png|webp|gif)$/i.test(mimeType);
 
-    if (extname && mimetype) {
+    if (hasValidExtension || hasValidMimeType) {
         cb(null, true);
     } else {
         cb(new Error('Only image files are allowed (jpeg, jpg, png, webp, gif)'));
@@ -54,6 +56,26 @@ const upload = multer({
         files: 10 // Max 10 files per upload
     }
 });
+
+function productImageUpload(req, res, next) {
+    upload.array('images', 10)(req, res, error => {
+        if (!error) {
+            return next();
+        }
+
+        if (error instanceof multer.MulterError) {
+            if (error.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ error: 'Each image must be 5MB or smaller' });
+            }
+
+            if (error.code === 'LIMIT_FILE_COUNT') {
+                return res.status(400).json({ error: 'You can upload up to 10 images per product' });
+            }
+        }
+
+        return res.status(400).json({ error: error.message || 'Image upload failed' });
+    });
+}
 
 // Image optimization middleware
 async function optimizeImages(req, res, next) {
@@ -117,6 +139,7 @@ async function optimizeImages(req, res, next) {
 
 module.exports = {
     upload,
+    productImageUpload,
     optimizeImages,
     uploadDir,
 };

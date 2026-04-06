@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const router = express.Router();
 const { queries, initDatabase } = require('../config/database');
 const { authMiddleware, roleMiddleware, loginWithEmail, loginWithPin } = require('../middleware/auth');
-const { upload, optimizeImages } = require('../middleware/upload');
+const { productImageUpload, optimizeImages } = require('../middleware/upload');
 
 function parseJsonField(value, fallback) {
     if (value === undefined || value === null || value === '') {
@@ -163,7 +163,7 @@ router.get('/products/:id', authMiddleware, (req, res) => {
     }
 });
 
-router.post('/products', authMiddleware, upload.array('images', 10), optimizeImages, (req, res) => {
+router.post('/products', authMiddleware, productImageUpload, optimizeImages, (req, res) => {
     try {
         const productData = buildProductPayload(req);
 
@@ -212,7 +212,7 @@ router.post('/products', authMiddleware, upload.array('images', 10), optimizeIma
     }
 });
 
-router.put('/products/:id', authMiddleware, upload.array('images', 10), optimizeImages, (req, res) => {
+router.put('/products/:id', authMiddleware, productImageUpload, optimizeImages, (req, res) => {
     try {
         const productData = buildProductPayload(req);
         const {
