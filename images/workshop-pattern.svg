@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="candleGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b35"/>
+      <stop offset="100%" style="stop-color:#ff8c42"/>
+    </linearGradient>
+    <linearGradient id="waxGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d1b2"/>
+      <stop offset="100%" style="stop-color:#00b89c"/>
+    </linearGradient>
+    <linearGradient id="printGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#9d00ff"/>
+      <stop offset="100%" style="stop-color:#b747ff"/>
+    </linearGradient>
+    <linearGradient id="sparkleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd93d"/>
+      <stop offset="100%" style="stop-color:#ffe066"/>
+    </linearGradient>
+
+    <!-- Candle Icon -->
+    <g id="candle">
+      <rect x="-8" y="-12" width="16" height="24" rx="2" fill="url(#candleGrad)"/>
+      <ellipse cx="0" cy="-12" rx="6" ry="3" fill="#ffd93d"/>
+      <path d="M0 -20 Q3 -26 0 -32 Q-3 -26 0 -20" fill="url(#sparkleGrad)">
+        <animate attributeName="d" values="M0 -20 Q3 -26 0 -32 Q-3 -26 0 -20; M0 -20 Q-3 -26 0 -32 Q3 -26 0 -20; M0 -20 Q3 -26 0 -32 Q-3 -26 0 -20" dur="0.5s" repeatCount="indefinite"/>
+      </path>
+    </g>
+
+    <!-- Wax Melt Icon -->
+    <g id="waxMelt">
+      <rect x="-10" y="-8" width="20" height="16" rx="3" fill="url(#waxGrad)"/>
+      <circle cx="-4" cy="-2" r="2" fill="rgba(255,255,255,0.4)"/>
+      <circle cx="4" cy="2" r="1.5" fill="rgba(255,255,255,0.4)"/>
+      <circle cx="2" cy="-4" r="1" fill="rgba(255,255,255,0.4)"/>
+    </g>
+
+    <!-- 3D Printer Icon -->
+    <g id="printer3d">
+      <rect x="-12" y="-10" width="24" height="20" rx="2" fill="url(#printGrad)"/>
+      <rect x="-8" y="-6" width="16" height="12" fill="#1a1a2e"/>
+      <path d="M-4 -2 L0 4 L4 -2 Z" fill="#00d1b2"/>
+      <circle cx="-6" cy="6" r="2" fill="#ffd93d"/>
+      <circle cx="6" cy="6" r="2" fill="#ffd93d"/>
+    </g>
+
+    <!-- Sparkle Icon -->
+    <g id="sparkle">
+      <path d="M0 -8 L2 -2 L8 0 L2 2 L0 8 L-2 2 L-8 0 L-2 -2 Z" fill="url(#sparkleGrad)"/>
+    </g>
+
+    <!-- Star Icon -->
+    <g id="star">
+      <path d="M0 -6 L1.5 -2 L6 0 L1.5 2 L0 6 L-1.5 2 L-6 0 L-1.5 -2 Z" fill="#ff6b35"/>
+    </g>
+
+    <!-- Heart Icon -->
+    <g id="heart">
+      <path d="M0 4 C-4 0 -4 -3 -2 -5 C0 -7 2 -5 2 -5 C2 -5 4 -7 6 -5 C8 -3 8 0 4 4 L0 8 Z" fill="#ff8fab" transform="scale(0.8)"/>
+    </g>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="400" fill="transparent"/>
+
+  <!-- Pattern elements scattered around -->
+  <use href="#candle" x="50" y="50"/>
+  <use href="#waxMelt" x="120" y="80"/>
+  <use href="#printer3d" x="200" y="60"/>
+  <use href="#sparkle" x="280" y="100"/>
+  <use href="#star" x="350" y="50"/>
+
+  <use href="#candle" x="320" y="150"/>
+  <use href="#heart" x="80" y="140"/>
+  <use href="#waxMelt" x="250" y="180"/>
+  <use href="#sparkle" x="150" y="200"/>
+
+  <use href="#printer3d" x="100" y="250"/>
+  <use href="#candle" x="220" y="280"/>
+  <use href="#star" x="300" y="240"/>
+  <use href="#waxMelt" x="360" y="300"/>
+
+  <use href="#heart" x="180" y="340"/>
+  <use href="#sparkle" x="60" y="320"/>
+  <use href="#candle" x="340" y="360"/>
+  <use href="#waxMelt" x="40" y="380"/>
+  <use href="#printer3d" x="280" y="350"/>
+
+  <!-- Extra sparkles for magic -->
+  <circle cx="90" cy="30" r="2" fill="#ffd93d" opacity="0.6"/>
+  <circle cx="170" cy="70" r="1.5" fill="#00d1b2" opacity="0.6"/>
+  <circle cx="260" cy="40" r="2" fill="#ff6b35" opacity="0.5"/>
+  <circle cx="340" cy="200" r="1.5" fill="#9d00ff" opacity="0.6"/>
+  <circle cx="20" cy="180" r="2" fill="#ffd93d" opacity="0.5"/>
+  <circle cx="130" cy="320" r="1.5" fill="#ff8fab" opacity="0.6"/>
+  <circle cx="240" cy="220" r="2" fill="#00d1b2" opacity="0.5"/>
+  <circle cx="380" cy="340" r="1.5" fill="#ff6b35" opacity="0.6"/>
+</svg>

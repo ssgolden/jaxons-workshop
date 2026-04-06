@@ -1,0 +1,24 @@
+{
+  "name": "jaxons-workshop",
+  "version": "1.0.0",
+  "description": "Jaxon's Workshop - Candles, wax melts & 3D prints",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "better-sqlite3": "^12.8.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.34.5",
+    "slugify": "^1.6.9",
+    "socket.io": "^4.8.1",
+    "sql.js": "^1.11.0",
+    "uuid": "^13.0.0"
+  }
+}

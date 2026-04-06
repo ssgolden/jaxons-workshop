@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jaxon's Workshop Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="staff.css">
+    <script src="staff.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body x-data="staffBoard()" x-cloak>
+
+    <!-- LOGIN OVERLAY -->
+    <div x-show="!isLoggedIn" class="login-overlay">
+        <div class="login-card">
+            <div style="text-align:center; margin-bottom:24px;">
+                <span style="font-size:3rem; display:block; margin-bottom:8px;">🕯️</span>
+                <h1 style="font-family:'Poppins',sans-serif; font-weight:900; color:#ff6b35; font-size:1.5rem;">Jaxon's Workshop</h1>
+                <p style="color:rgba(255,255,255,0.4); font-size:0.85rem;">Admin Board — Enter PIN to continue</p>
+            </div>
+            <div class="form-group">
+                <input type="password" x-model="pin" class="form-control" placeholder="Enter PIN" @keyup.enter="login()" style="text-align:center; font-size:1.5rem; letter-spacing:8px;">
+            </div>
+            <button class="btn-login" @click="login()" :disabled="pin.length === 0">
+                <span>Enter Admin</span>
+                <span class="material-icons">arrow_forward</span>
+            </button>
+            <p x-show="pinError" style="color:#ff6b35; text-align:center; font-size:0.85rem; margin-top:12px;" x-text="pinError"></p>
+        </div>
+    </div>
+
+    <!-- MAIN BOARD -->
+    <div x-show="isLoggedIn" class="board-container">
+
+        <!-- Header -->
+        <header class="board-header">
+            <div class="d-flex justify-content-between align-items-center w-100 px-3">
+                <div>
+                    <h1 style="font-family:'Poppins',sans-serif; font-weight:900; color:#ff6b35; font-size:1.3rem; margin:0;">Jaxon's Workshop</h1>
+                    <span style="color:rgba(255,255,255,0.4); font-size:0.75rem;">Admin Board</span>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="header-stats">
+                        <span style="color:#ffd93d; font-weight:800;" x-text="todayOrders.length"></span>
+                        <span style="color:rgba(255,255,255,0.4); font-size:0.75rem;">today</span>
+                    </div>
+                    <div class="header-stats">
+                        <span style="color:#00d1b2; font-weight:800;">€<span x-text="todayRevenue.toFixed(0)"></span></span>
+                        <span style="color:rgba(255,255,255,0.4); font-size:0.75rem;">revenue</span>
+                    </div>
+                    <button class="btn-logout" @click="logout()">
+                        <span class="material-icons" style="font-size:1rem;">logout</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tab Nav -->
+        <div class="tab-nav">
+            <button class="tab-btn" :class="{'active': activeTab === 'active'}" @click="activeTab = 'active'; loadOrders()">
+                <span class="material-icons" style="font-size:1rem;">inbox</span>
+                Active Orders
+                <span x-show="orders.length > 0" class="tab-badge" x-text="orders.length"></span>
+            </button>
+            <button class="tab-btn" :class="{'active': activeTab === 'history'}" @click="activeTab = 'history'; loadHistory()">
+                <span class="material-icons" style="font-size:1rem;">history</span>
+                History
+            </button>
+            <button class="tab-btn" :class="{'active': activeTab === 'stats'}" @click="activeTab = 'stats'; loadStats()">
+                <span class="material-icons" style="font-size:1rem;">bar_chart</span>
+                Stats
+            </button>
+        </div>
+
+        <!-- ACTIVE ORDERS -->
+        <div x-show="activeTab === 'active'" class="orders-grid">
+            <div x-show="orders.length === 0" class="empty-board">
+                <span class="material-icons" style="font-size:4rem; color:rgba(255,255,255,0.1);">inbox</span>
+                <p>No active orders</p>
+                <p style="color:rgba(255,255,255,0.3); font-size:0.85rem;">New orders will appear here!</p>
+            </div>
+            <template x-for="order in orders" :key="order.id">
+                <div class="order-card" :class="'status-' + order.status">
+                    <div class="order-card-header">
+                        <div class="order-number" x-text="'#' + order.order_number"></div>
+                        <div class="order-status-badge" :class="'badge-' + order.status" x-text="order.status.toUpperCase()"></div>
+                    </div>
+
+                    <div x-show="order.table_number" class="table-number-badge">
+                        <span class="material-icons" style="font-size:13px;">table_restaurant</span>
+                        <span x-text="'Table ' + order.table_number"></span>
+                    </div>
+
+                    <div class="order-customer">
+                        <span class="material-icons" style="font-size:14px;">person</span>
+                        <span x-text="order.customer_name || 'Guest'"></span>
+                        <span x-show="order.phone" style="margin-left:8px; color:rgba(255,255,255,0.4); font-size:0.8rem;" x-text="order.phone"></span>
+                    </div>
+
+                    <div class="order-type-badge" :class="order.order_type === 'delivery' ? 'badge-delivery' : 'badge-pickup'">
+                        <span x-text="order.order_type === 'delivery' ? '🚚 Delivery' : '📦 Pickup'"></span>
+                    </div>
+
+                    <div class="order-items">
+                        <template x-for="item in order.items" :key="item.name">
+                            <div class="order-item">
+                                <span class="order-item-qty" x-text="item.quantity || 1 + '×'"></span>
+                                <span class="order-item-name" x-text="item.name"></span>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="order-total">
+                        <span>Total</span>
+                        <span style="color:#ffd93d; font-weight:800;" x-text="'€' + parseFloat(order.total).toFixed(2)"></span>
+                    </div>
+
+                    <div x-show="order.special_instructions" class="order-notes">
+                        <span class="material-icons" style="font-size:13px;">notes</span>
+                        <span x-text="order.special_instructions"></span>
+                    </div>
+
+                    <div class="order-time">
+                        <span class="material-icons" style="font-size:13px;">schedule</span>
+                        <span x-text="timeAgo(order.created_at)"></span>
+                        <span x-show="minsAgo(order.created_at) > 5" style="color:#ff6b35; margin-left:4px;" x-text="'(' + minsAgo(order.created_at) + 'm ago)'"></span>
+                    </div>
+
+                    <div class="order-action">
+                        <template x-if="order.status === 'new' || order.status === 'confirmed'">
+                            <button class="action-btn action-start" @click="updateStatus(order.id, 'processing')">
+                                <span>START</span>
+                                <span class="material-icons">arrow_forward</span>
+                            </button>
+                        </template>
+                        <template x-if="order.status === 'processing'">
+                            <button class="action-btn action-ready" @click="updateStatus(order.id, 'ready')">
+                                <span>READY!</span>
+                                <span class="material-icons">check</span>
+                            </button>
+                        </template>
+                        <template x-if="order.status === 'ready'">
+                            <button class="action-btn action-done" @click="updateStatus(order.id, 'completed')">
+                                <span>DONE</span>
+                                <span class="material-icons">done_all</span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- ORDER HISTORY -->
+        <div x-show="activeTab === 'history'" class="orders-grid">
+            <div x-show="history.length === 0" class="empty-board">
+                <span class="material-icons" style="font-size:4rem; color:rgba(255,255,255,0.1);">history</span>
+                <p>No completed orders yet</p>
+            </div>
+            <template x-for="order in history" :key="order.id">
+                <div class="order-card status-completed">
+                    <div class="order-card-header">
+                        <div class="order-number" x-text="'#' + order.order_number"></div>
+                        <div class="order-status-badge badge-completed" x-text="order.status.toUpperCase()"></div>
+                    </div>
+                    <div class="order-customer">
+                        <span x-text="order.customer_name || 'Guest'"></span>
+                        <span style="margin-left:8px; color:rgba(255,255,255,0.4);" x-text="timeAgo(order.created_at)"></span>
+                    </div>
+                    <div class="order-items">
+                        <template x-for="item in order.items.slice(0,3)" :key="item.name">
+                            <div class="order-item">
+                                <span class="order-item-qty" x-text="item.quantity || 1 + '×'"></span>
+                                <span class="order-item-name" x-text="item.name"></span>
+                            </div>
+                        </template>
+                        <div x-show="order.items.length > 3" style="color:rgba(255,255,255,0.3); font-size:0.75rem;" x-text="'+' + (order.items.length - 3) + ' more'"></div>
+                    </div>
+                    <div class="order-total">
+                        <span>Total</span>
+                        <span style="color:#ffd93d; font-weight:800;" x-text="'€' + parseFloat(order.total).toFixed(2)"></span>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- STATS -->
+        <div x-show="activeTab === 'stats'" class="stats-container">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="material-icons" style="color:#ff6b35; font-size:2rem;">receipt</span>
+                    <div class="stat-value" x-text="todayOrders.length"></div>
+                    <div class="stat-label">Orders Today</div>
+                </div>
+                <div class="stat-card">
+                    <span class="material-icons" style="color:#ffd93d; font-size:2rem;">euro</span>
+                    <div class="stat-value" x-text="'€' + todayRevenue.toFixed(2)"></div>
+                    <div class="stat-label">Revenue Today</div>
+                </div>
+                <div class="stat-card">
+                    <span class="material-icons" style="color:#00d1b2; font-size:2rem;">check_circle</span>
+                    <div class="stat-value" x-text="completedToday"></div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-card">
+                    <span class="material-icons" style="color:#9d00ff; font-size:2rem;">pending</span>
+                    <div class="stat-value" x-text="pendingToday"></div>
+                    <div class="stat-label">Pending</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <audio id="notifySound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQ==" type="audio/wav">
+    </audio>
+
+</body>
+</html>

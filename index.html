@@ -1,0 +1,771 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jaxon's Workshop | Handmade Candles & 3D Prints</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body x-data="jaxonshop()" x-cloak @keydown.escape.window="closeProduct(); isDrawerOpen = false">
+    <div id="app">
+
+        <!-- HEADER -->
+        <header class="logo-header">
+            <div class="logo-header-inner">
+                <button class="menu-toggle" @click="isDrawerOpen = true" aria-label="Open menu">
+                    <span class="material-icons">menu</span>
+                </button>
+                <h1 @click="view = 'home'">JAXON'S <span>WORKSHOP</span></h1>
+                <button class="cart-toggle" @click="goToCart()" aria-label="Open cart">
+                    <span class="material-icons">shopping_cart</span>
+                    <span class="cart-count" x-show="cartCount > 0" x-text="cartCount"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- SIDE DRAWER -->
+        <div class="drawer-overlay" :class="{ 'open': isDrawerOpen }" @click="isDrawerOpen = false"></div>
+        <div class="side-drawer" :class="{ 'open': isDrawerOpen }">
+            <div class="drawer-header">
+                <h3>Menu</h3>
+                <span class="material-icons" style="cursor:pointer;" @click="isDrawerOpen = false" aria-label="Close menu" role="button" tabindex="0">close</span>
+            </div>
+            <template x-for="(items, category) in fullMenu" :key="category">
+                <div class="drawer-item" @click="openCategory(category)">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span class="material-icons" x-text="getCategoryIcon(category)"></span>
+                        <span style="font-weight:600;" x-text="category"></span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:0.8rem; color:var(--color-text-light);" x-text="items.length + ' items'"></span>
+                        <span class="material-icons" style="color:var(--color-muted);">chevron_right</span>
+                    </div>
+                </div>
+            </template>
+            <div style="padding:20px; border-top:1px solid var(--color-bg); margin-top:10px;">
+                <div class="drawer-item" @click="view = 'about'; isDrawerOpen = false">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span class="material-icons" style="color:var(--color-primary);">person</span>
+                        <span style="font-weight:600;">About Jaxon</span>
+                    </div>
+                </div>
+                <div class="drawer-item" @click="view = 'cart'; isDrawerOpen = false">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span class="material-icons" style="color:var(--color-accent);">shopping_cart</span>
+                        <span style="font-weight:600;">My Cart</span>
+                        <span class="cart-count" x-show="cartCount > 0" x-text="cartCount"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TOAST NOTIFICATIONS -->
+        <div class="toast-container">
+            <template x-for="toast in toasts" :key="toast.id">
+                <div class="toast" :class="toast.type">
+                    <span class="material-icons" x-text="toast.type === 'success' ? 'check_circle' : 'error'"></span>
+                    <span x-text="toast.message"></span>
+                </div>
+            </template>
+        </div>
+
+        <!-- ============ HOME VIEW ============ -->
+        <template x-if="view === 'home'">
+            <div>
+                <!-- HERO -->
+                <section class="hero-wrapper">
+                    <div class="hero-content">
+                        <div class="hero-text">
+                            <div class="hero-badge">
+                                <span>✨</span>
+                                <span>Handmade by a 9-year-old!</span>
+                            </div>
+                            <h1 class="hero-title">
+                                <span class="accent">Jaxon's</span><br>Workshop
+                            </h1>
+                            <p class="hero-subtitle" x-text="settingValue('home_hero_subtitle', 'Beautiful soy candles, delightful wax melts & custom 3D prints — all handmade with love by me!')"></p>
+                            <button class="btn btn-primary btn-lg" @click="openFirstCategory()">
+                                <span class="material-icons" style="font-size:1.1rem;">storefront</span>
+                                Shop Now
+                            </button>
+                            <div class="hero-cta-row">
+                                <button class="hero-chip" @click="openCategory('Candles')">Shop Candles</button>
+                                <button class="hero-chip" @click="openCategory('Wax Melts')">Shop Wax Melts</button>
+                                <button class="hero-chip" @click="openCategory('3D Prints')">Shop 3D Prints</button>
+                            </div>
+                        </div>
+                        <div class="hero-image">
+                            <img src="images/Gemini_Generated_Image_.png" alt="Cartoon of Jaxon making candles at his workshop" />
+                        </div>
+                    </div>
+                </section>
+
+                <section class="trust-strip-section">
+                    <div class="trust-strip-grid">
+                        <div class="trust-strip-card">
+                            <span class="material-icons">storefront</span>
+                            <div>
+                                <h3>Local Pickup Friendly</h3>
+                                <p>Choose pickup at checkout and collect your order when it is ready.</p>
+                            </div>
+                        </div>
+                        <div class="trust-strip-card">
+                            <span class="material-icons">volunteer_activism</span>
+                            <div>
+                                <h3>Handmade In Small Batches</h3>
+                                <p>Every candle, wax melt, and print is made with care rather than mass produced.</p>
+                            </div>
+                        </div>
+                        <div class="trust-strip-card">
+                            <span class="material-icons">draw</span>
+                            <div>
+                                <h3>Custom Orders Welcome</h3>
+                                <p>Use checkout notes to ask about names, gifts, scents, and simple custom ideas.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- FEATURED PRODUCTS -->
+                <section class="products-section">
+                    <div class="section-header">
+                        <h2 class="section-title" x-text="settingValue('home_featured_heading', '🔥 Popular Items')"></h2>
+                        <p class="section-subtitle" x-text="settingValue('home_featured_subtitle', 'Handpicked favorites that everyone loves')"></p>
+                    </div>
+                    <div class="products-grid">
+                        <template x-for="item in featuredItems()" :key="item.name">
+                            <div class="product-card" @click="openProduct(item)">
+                                <div class="product-topline">
+                                    <span class="product-badge" x-text="productCategoryLabel(item)"></span>
+                                    <span class="stock-pill" :class="inventoryTone(item)" x-text="inventoryLabel(item)"></span>
+                                </div>
+                                <img :src="productImage(item)" :alt="item.name" class="product-icon" />
+                                <h3 class="product-name" x-text="item.name"></h3>
+                                <p class="product-desc" x-text="item.desc || categoryDescription(productCategoryLabel(item))"></p>
+                                <div class="product-price" x-text="formatPrice(item.price)"></div>
+                                <div class="product-actions">
+                                    <button class="product-secondary-btn">View details</button>
+                                    <button class="product-add-btn" :class="{'added': item.justAdded}" @click.stop="addToCart(item)" x-text="item.justAdded ? '✓ Added!' : 'Add to Cart'"></button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <div style="text-align:center; margin-top:40px;">
+                        <button class="btn btn-secondary" @click="openFirstCategory()">
+                            View All Products →
+                        </button>
+                    </div>
+                </section>
+
+                <section class="products-section" style="padding-top:0;">
+                    <div class="section-header" style="padding-top:0;">
+                        <h2 class="section-title">Shop By Category</h2>
+                        <p class="section-subtitle">Jump straight to candles, wax melts, 3D prints, and any new collection you add.</p>
+                    </div>
+                    <div class="products-grid">
+                        <template x-for="category in getCategories()" :key="category">
+                            <button type="button" class="product-card category-card" @click="openCategory(category)">
+                                <span class="material-icons category-card-icon" x-text="getCategoryIcon(category)"></span>
+                                <h3 class="product-name" x-text="category"></h3>
+                                <p class="product-desc" style="font-size:0.85rem; color:var(--color-text-light); margin-bottom:12px;" x-text="categoryDescription(category)"></p>
+                                <p class="category-count" x-text="getItems(category).length ? getItems(category).length + ' products live' : 'Coming soon'"></p>
+                                <span class="btn btn-secondary" style="pointer-events:none;">Browse</span>
+                            </button>
+                        </template>
+                    </div>
+                </section>
+
+                <section class="products-section" style="padding-top:0;">
+                    <div class="section-header" style="padding-top:0;">
+                        <h2 class="section-title">How Ordering Works</h2>
+                        <p class="section-subtitle">Simple steps for local pickup, delivery, and custom handmade gifts.</p>
+                    </div>
+                    <div class="how-it-works-grid">
+                        <div class="how-card">
+                            <span class="material-icons">shopping_bag</span>
+                            <h3>Choose Your Favorites</h3>
+                            <p>Browse candles, wax melts, and 3D prints, then open any item to see more details before adding it to cart.</p>
+                        </div>
+                        <div class="how-card">
+                            <span class="material-icons">payments</span>
+                            <h3>Place Your Order</h3>
+                            <p>Checkout online, pick your delivery method, and leave notes for custom requests or gift ideas.</p>
+                        </div>
+                        <div class="how-card">
+                            <span class="material-icons">volunteer_activism</span>
+                            <h3>Handmade By Jaxon</h3>
+                            <p>Each order is made in small batches with care, then prepared for pickup or delivery as quickly as possible.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="custom-orders-section">
+                    <div class="custom-orders-card">
+                        <div class="custom-orders-copy">
+                            <span class="custom-orders-label">Custom Orders</span>
+                            <h2 x-text="settingValue('home_custom_title', 'Need a personalized gift or custom 3D print?')"></h2>
+                            <p x-text="settingValue('home_custom_text', 'Even without a full custom-order form yet, you can still order something personal. Add your idea in the checkout notes and Jaxon can follow up on names, colors, scents, and simple custom requests.')"></p>
+                            <div class="custom-orders-points">
+                                <span>Name keychains and simple text prints</span>
+                                <span>Gift-ready candle and wax melt picks</span>
+                                <span>Special notes for birthdays and small events</span>
+                            </div>
+                        </div>
+                        <div class="custom-orders-actions">
+                            <button class="btn btn-primary btn-lg" @click="openCategory('3D Prints')">Browse Custom-Friendly Items</button>
+                            <button class="btn btn-secondary" @click="goToCart()">Open Cart Notes</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ABOUT PREVIEW -->
+                <section class="about-section">
+                    <div class="about-content">
+                        <div class="about-image">
+                            <img src="images/Gemini_Generated_Image_.png" alt="Cartoon of Jaxon making candles at his workshop" style="object-fit:center;" />
+                        </div>
+                        <div class="about-text">
+                            <h2>Hi, I'm Jaxon! 👋</h2>
+                            <p>I'm 9 years old and I love making things with my hands. Every candle, wax melt, and 3D print is made by me in my workshop!</p>
+                            <p class="about-quote">"I started this because I wanted to share what I make with other people. It feels amazing when someone loves something I created!"</p>
+                            <button class="btn btn-primary" @click="view = 'about'">Read My Story</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </template>
+
+        <!-- ============ SHOP VIEW ============ -->
+        <template x-if="view === 'shop'">
+            <div>
+                <!-- CATEGORY TABS -->
+                <div class="category-tabs-wrapper">
+                    <div class="category-tabs">
+                        <template x-for="category in getCategories()" :key="category">
+                            <div class="cat-tab" :class="{'active': activeCategory === category}" @click="activeCategory = category">
+                                <span class="material-icons" x-text="getCategoryIcon(category)"></span>
+                                <span x-text="category"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- PRODUCTS GRID -->
+                <section class="products-section">
+                    <div x-show="isLoading" class="loading-state">
+                        <div class="loading-spinner"></div>
+                        <p>Loading products...</p>
+                    </div>
+
+                    <div class="section-header" x-show="!isLoading" style="padding-top:0;">
+                        <h2 class="section-title" x-text="activeCategory"></h2>
+                        <p class="section-subtitle" x-text="categoryDescription(activeCategory)"></p>
+                    </div>
+
+                    <div class="shop-toolbar" x-show="!isLoading">
+                        <div class="shop-search">
+                            <span class="material-icons">search</span>
+                            <input type="text" class="shop-search-input" x-model="searchQuery" placeholder="Search this category">
+                        </div>
+                        <label class="shop-sort">
+                            <span>Sort</span>
+                            <select x-model="sortOption" class="shop-sort-select">
+                                <option value="featured">Featured</option>
+                                <option value="name">Name</option>
+                                <option value="price-asc">Price: Low to High</option>
+                                <option value="price-desc">Price: High to Low</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <div class="shop-results-meta" x-show="!isLoading">
+                        <span x-text="filteredItems(activeCategory).length + ' items found'"></span>
+                    </div>
+
+                    <div class="products-grid" x-show="!isLoading && filteredItems(activeCategory).length > 0">
+                        <template x-for="item in filteredItems(activeCategory)" :key="item.name">
+                            <div class="product-card" @click="openProduct(item)">
+                                <div class="product-topline">
+                                    <span class="product-badge" x-text="productCategoryLabel(item)"></span>
+                                    <span class="stock-pill" :class="inventoryTone(item)" x-text="inventoryLabel(item)"></span>
+                                </div>
+                                <img :src="productImage(item)" :alt="item.name" class="product-icon" />
+                                <h3 class="product-name" x-text="item.name"></h3>
+                                <p class="product-desc" x-text="item.desc || categoryDescription(activeCategory)"></p>
+                                <div class="product-price" x-text="formatPrice(item.price)"></div>
+                                <div class="product-actions">
+                                    <button class="product-secondary-btn">View details</button>
+                                    <button class="product-add-btn" :class="{'added': item.justAdded}" @click.stop="addToCart(item)" x-text="item.justAdded ? '✓ Added!' : 'Add to Cart'"></button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="empty-state" x-show="!isLoading && filteredItems(activeCategory).length === 0">
+                        <span class="material-icons">inventory_2</span>
+                        <h3 style="margin-bottom:12px;" x-text="searchQuery ? 'No matches found' : activeCategory + ' coming soon'"></h3>
+                        <p x-text="searchQuery ? 'Try a different search term or browse another category.' : emptyCategoryMessage(activeCategory)"></p>
+                        <button class="btn btn-secondary" style="margin-top:18px;" @click="searchQuery = ''; openFirstCategory()">Browse Best Sellers</button>
+                    </div>
+                </section>
+
+                <!-- FLOATING CART BUTTON -->
+                <div class="floating-cart" x-show="cartCount > 0">
+                    <button class="floating-cart-btn" @click="goToCart()">
+                        <span class="material-icons" style="font-size:1.2rem;">shopping_cart</span>
+                        <span>Cart (<span x-text="cartCount"></span>)</span>
+                    </button>
+                </div>
+            </div>
+        </template>
+
+        <!-- ============ CHECKOUT VIEW (MULTI-STEP) ============ -->
+        <template x-if="view === 'cart'">
+            <div class="checkout-page">
+                <div class="checkout-container">
+                    <!-- LEFT: Main Checkout Steps -->
+                    <div class="checkout-main">
+                        <!-- STEP 1: CART -->
+                        <template x-if="checkoutStep === 1">
+                            <div class="checkout-step" x-transition:enter="step-enter" x-transition:leave="step-leave">
+                                <div class="step-header">
+                                    <h2 class="step-title">Your Cart</h2>
+                                    <button class="btn btn-secondary btn-sm" @click="view = 'shop'">Continue Shopping</button>
+                                </div>
+
+                                <div x-show="cart.length === 0" class="empty-cart-panel">
+                                    <div class="empty-cart-icon">
+                                        <span class="material-icons">shopping_bag</span>
+                                    </div>
+                                    <h3>Your cart is empty</h3>
+                                    <p>Start with a bestseller or jump into one of the shop categories.</p>
+                                    <div class="empty-cart-actions">
+                                        <button class="btn btn-primary" @click="openFirstCategory()">Browse Products</button>
+                                        <button class="btn btn-secondary" @click="view = 'home'">Back Home</button>
+                                    </div>
+                                </div>
+
+                                <div x-show="cart.length > 0">
+                                    <!-- Cart Items -->
+                                    <div class="cart-items-list-enhanced">
+                                        <template x-for="(item, index) in cart" :key="index">
+                                            <div class="cart-item-enhanced">
+                                                <div class="item-image-wrapper">
+                                                    <img :src="productImage(item, 'thumb')" :alt="item.name" class="cart-item-image" />
+                                                </div>
+                                                <div class="item-details">
+                                                    <h4 class="item-name" x-text="item.name"></h4>
+                                                    <p class="item-meta" x-text="item.desc || ''"></p>
+                                                    <div class="item-price" x-text="formatPrice(item.price)"></div>
+                                                </div>
+                                                <div class="item-actions">
+                                                    <div class="qty-stepper">
+                                                        <button class="stepper-btn" @click="qtyDecrease(index)">
+                                                            <span class="material-icons">remove</span>
+                                                        </button>
+                                                        <span class="stepper-value" x-text="item.quantity || 1"></span>
+                                                        <button class="stepper-btn" @click="qtyIncrease(index)">
+                                                            <span class="material-icons">add</span>
+                                                        </button>
+                                                    </div>
+                                                    <button class="remove-btn" @click="removeFromCart(index)">
+                                                        <span class="material-icons" style="font-size:1.1rem;">delete</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <!-- Free Shipping Progress -->
+                                    <div class="cart-progress" x-show="deliveryFeeAmount > 0 && cartTotal < freeShippingThreshold">
+                                        <div class="progress-header">
+                                            <span class="material-icons" style="color:var(--color-accent);">local_shipping</span>
+                                            <span x-text="cartTotal >= freeShippingThreshold ? 'You unlocked free delivery!' : 'Spend ' + formatPrice(freeShippingThreshold - cartTotal) + ' more for FREE delivery!'"></span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" :style="'width: ' + Math.min((cartTotal / Math.max(freeShippingThreshold, 1)) * 100, 100) + '%'"></div>
+                                        </div>
+                                    </div>
+
+                                    <button class="btn btn-primary btn-block btn-lg" @click="goToInformation()" :disabled="cart.length === 0">
+                                        Continue to Information
+                                        <span class="material-icons" style="font-size:1.1rem; margin-left:6px;">arrow_forward</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- STEP 2: INFORMATION -->
+                        <template x-if="checkoutStep === 2">
+                            <div class="checkout-step" x-transition:enter="step-enter" x-transition:leave="step-leave">
+                                <div class="step-header">
+                                    <h2 class="step-title">Contact Information</h2>
+                                    <button class="btn btn-secondary btn-sm" @click="checkoutStep = 1">Back to Cart</button>
+                                </div>
+
+                                <div class="checkout-card">
+                                    <div class="form-grid">
+                                        <div class="form-group-full">
+                                            <label class="form-label">Email Address *</label>
+                                            <input type="email" x-model="checkoutData.email" @blur="validateField('email')" class="form-input" :class="{'error': errors.email}" placeholder="your@email.com">
+                                            <p class="field-error" x-show="errors.email" x-text="errors.email"></p>
+                                        </div>
+                                        <div class="form-group-full">
+                                            <label class="form-label">Full Name *</label>
+                                            <input type="text" x-model="checkoutData.name" class="form-input" :class="{'error': errors.name}" placeholder="John Doe">
+                                            <p class="field-error" x-show="errors.name" x-text="errors.name"></p>
+                                        </div>
+                                        <div class="form-group-full">
+                                            <label class="form-label">Phone Number *</label>
+                                            <input type="tel" x-model="checkoutData.phone" @blur="validateField('phone')" class="form-input" :class="{'error': errors.phone}" placeholder="+34 600 000 000">
+                                            <p class="field-error" x-show="errors.phone" x-text="errors.phone"></p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-primary btn-block btn-lg" @click="goToShipping()">
+                                    Continue to Shipping
+                                    <span class="material-icons" style="font-size:1.1rem; margin-left:6px;">arrow_forward</span>
+                                </button>
+                            </div>
+                        </template>
+
+                        <!-- STEP 3: SHIPPING METHOD -->
+                        <template x-if="checkoutStep === 3">
+                            <div class="checkout-step" x-transition:enter="step-enter" x-transition:leave="step-leave">
+                                <div class="step-header">
+                                    <h2 class="step-title">Shipping Method</h2>
+                                    <button class="btn btn-secondary btn-sm" @click="checkoutStep = 2">Back</button>
+                                </div>
+
+                                <div class="checkout-card">
+                                    <div class="delivery-options">
+                                        <button class="delivery-option" :class="{'active': orderType === 'pickup'}" @click="selectDeliveryMethod('pickup')">
+                                            <div class="option-icon">
+                                                <span class="material-icons">store</span>
+                                            </div>
+                                            <div class="option-details">
+                                                <span class="option-title">Store Pickup</span>
+                                                <span class="option-desc" x-text="'Free · Ready in ' + pickupReadyText()"></span>
+                                            </div>
+                                            <div class="option-radio" :class="{'checked': orderType === 'pickup'}"></div>
+                                        </button>
+                                        <button class="delivery-option" :class="{'active': orderType === 'delivery'}" @click="selectDeliveryMethod('delivery')">
+                                            <div class="option-icon">
+                                                <span class="material-icons">home</span>
+                                            </div>
+                                            <div class="option-details">
+                                                <span class="option-title">Home Delivery</span>
+                                                <span class="option-desc" x-text="deliveryOptionText()"></span>
+                                            </div>
+                                            <div class="option-radio" :class="{'checked': orderType === 'delivery'}"></div>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Delivery Address Form -->
+                                <div class="checkout-card" x-show="orderType === 'delivery'">
+                                    <div class="checkout-card-header">
+                                        <span class="material-icons" style="color:var(--color-primary);">home</span>
+                                        <h3>Delivery Address</h3>
+                                    </div>
+                                    <div class="form-grid">
+                                        <div class="form-group-full">
+                                            <label class="form-label">Street Address *</label>
+                                            <input type="text" x-model="checkoutData.address" class="form-input" :class="{'error': errors.address}" placeholder="Calle Mayor 123">
+                                            <p class="field-error" x-show="errors.address" x-text="errors.address"></p>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group-half">
+                                                <label class="form-label">City *</label>
+                                                <input type="text" x-model="checkoutData.city" class="form-input" :class="{'error': errors.city}" placeholder="Murcia">
+                                                <p class="field-error" x-show="errors.city" x-text="errors.city"></p>
+                                            </div>
+                                            <div class="form-group-half">
+                                                <label class="form-label">Postal Code *</label>
+                                                <input type="text" x-model="checkoutData.postalCode" class="form-input" :class="{'error': errors.postalCode}" placeholder="30001">
+                                                <p class="field-error" x-show="errors.postalCode" x-text="errors.postalCode"></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-primary btn-block btn-lg" @click="goToPayment()">
+                                    Continue to Payment
+                                    <span class="material-icons" style="font-size:1.1rem; margin-left:6px;">arrow_forward</span>
+                                </button>
+                            </div>
+                        </template>
+
+                        <!-- STEP 4: PAYMENT -->
+                        <template x-if="checkoutStep === 4">
+                            <div class="checkout-step" x-transition:enter="step-enter" x-transition:leave="step-leave">
+                                <div class="step-header">
+                                    <h2 class="step-title">Payment</h2>
+                                    <button class="btn btn-secondary btn-sm" @click="checkoutStep = 3">Back</button>
+                                </div>
+
+                                <!-- Payment Method Selection -->
+                                <div class="checkout-card">
+                                    <div class="payment-methods">
+                                        <button class="payment-method" :class="{'active': checkoutData.paymentMethod === 'cash_pickup'}" @click="selectPaymentMethod('cash_pickup')">
+                                            <div class="payment-icon">
+                                                <span class="material-icons">payments</span>
+                                            </div>
+                                            <div class="payment-details">
+                                                <span class="payment-title">Pay on Pickup</span>
+                                                <span class="payment-desc">Pay when you collect</span>
+                                            </div>
+                                            <div class="payment-radio" :class="{'checked': checkoutData.paymentMethod === 'cash_pickup'}"></div>
+                                        </button>
+                                        <button class="payment-method" x-show="orderType === 'delivery'" :class="{'active': checkoutData.paymentMethod === 'pay_delivery'}" @click="selectPaymentMethod('pay_delivery')">
+                                            <div class="payment-icon">
+                                                <span class="material-icons">local_shipping</span>
+                                            </div>
+                                            <div class="payment-details">
+                                                <span class="payment-title">Pay on Delivery</span>
+                                                <span class="payment-desc">Cash or card at door</span>
+                                            </div>
+                                            <div class="payment-radio" :class="{'checked': checkoutData.paymentMethod === 'pay_delivery'}"></div>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Terms & Conditions -->
+                                <div class="terms-checkbox">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" x-model="checkoutData.agreeTerms" class="checkbox-input">
+                                        <span class="checkbox-custom"></span>
+                                        <span class="checkbox-text">I agree to the <a href="/terms.html" style="text-decoration:underline;">Terms & Conditions</a> and <a href="/privacy.html" style="text-decoration:underline;">Privacy Policy</a></span>
+                                    </label>
+                                    <p class="field-error" x-show="errors.agreeTerms" x-text="errors.agreeTerms"></p>
+                                </div>
+
+                                <div class="checkout-note-card">
+                                    <div class="checkout-note-title">
+                                        <span class="material-icons">info</span>
+                                        <span>What happens next?</span>
+                                    </div>
+                                    <p x-show="orderType === 'pickup'">Place your order now, then we will prepare it for pickup. Bring your order number when you collect.</p>
+                                    <p x-show="orderType === 'delivery'">Place your order now, then we will prepare it for delivery and use your address details to complete the drop-off.</p>
+                                    <p>You can use order notes for gift requests, custom names, scent preferences, or any extra details we should know.</p>
+                                </div>
+
+                                <button class="btn btn-primary btn-block btn-lg" @click="processOrder()" :disabled="isProcessing">
+                                    <span class="material-icons" style="font-size:1.1rem; margin-right:8px;" x-show="isProcessing">hourglass_empty</span>
+                                    <span x-text="isProcessing ? 'Processing...' : 'Place Order - ' + formatPrice(orderTotal)"></span>
+                                </button>
+
+                                <p class="secure-checkout">
+                                    <span class="material-icons" style="font-size:1rem;">lock</span>
+                                    We only use your details to fulfill this order
+                                </p>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- RIGHT: Order Summary (Sticky) -->
+                    <div class="checkout-sidebar">
+                        <div class="order-summary-sticky">
+                            <h3 class="summary-title">Order Summary</h3>
+                            <div class="summary-items">
+                                <template x-for="(item, index) in cart" :key="index">
+                                        <div class="summary-item">
+                                            <div class="summary-item-image">
+                                                <img :src="productImage(item, 'thumb')" :alt="item.name" />
+                                            </div>
+                                        <div class="summary-item-details">
+                                            <p class="summary-item-name" x-text="item.name"></p>
+                                            <p class="summary-item-qty">Qty: <span x-text="item.quantity || 1"></span></p>
+                                        </div>
+                                        <div class="summary-item-price" x-text="formatPrice(item.price * (item.quantity || 1))"></div>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <div class="summary-divider"></div>
+
+                            <div class="summary-row">
+                                <span>Subtotal</span>
+                                <span x-text="formatPrice(cartTotal)"></span>
+                            </div>
+                            <div class="summary-row" x-show="orderType === 'delivery'">
+                                <span>Delivery</span>
+                                <span x-text="deliveryFee === 0 ? 'FREE' : formatPrice(deliveryFee)"></span>
+                            </div>
+                            <div class="summary-row discount" x-show="false">
+                                <span>Discount</span>
+                                <span>-€0.00</span>
+                            </div>
+
+                            <div class="summary-divider"></div>
+
+                            <div class="summary-row total">
+                                <span>Total</span>
+                                <span x-text="formatPrice(orderTotal)"></span>
+                            </div>
+
+                            <!-- Trust Badges -->
+                            <div class="trust-badges">
+                                <div class="trust-badge">
+                                    <span class="material-icons">verified</span>
+                                    <span>Order confirmation</span>
+                                </div>
+                                <div class="trust-badge">
+                                    <span class="material-icons">local_shipping</span>
+                                    <span>Pickup or delivery</span>
+                                </div>
+                                <div class="trust-badge">
+                                    <span class="material-icons">volunteer_activism</span>
+                                    <span>Handmade in small batches</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- ============ SUCCESS VIEW ============ -->
+        <template x-if="view === 'success'">
+            <div class="success-view">
+                <div class="success-icon">
+                    <span class="material-icons">check</span>
+                </div>
+                <h2 style="margin-bottom:8px;">Thank You, <span x-text="orderSuccess?.customer_name || 'friend'"></span>!</h2>
+                <p style="color:var(--color-text-light); margin-bottom:24px;">Your order has been placed successfully</p>
+
+                <div class="order-number">
+                    <span x-text="orderSuccess?.order_number"></span>
+                </div>
+
+                <div style="display:flex; justify-content:center; gap:32px; margin:32px 0;">
+                    <div style="text-align:center;">
+                        <span class="material-icons" style="font-size:2.5rem; color:var(--color-primary);" x-text="orderSuccess?.order_type === 'delivery' ? 'home' : 'local_shipping'"></span>
+                        <p style="font-weight:600; margin-top:8px;" x-text="orderSuccess?.order_type === 'delivery' ? 'Delivery' : 'Pickup'"></p>
+                    </div>
+                    <div x-show="orderSuccess?.table_number" style="text-align:center;">
+                        <span class="material-icons" style="font-size:2.5rem; color:var(--color-accent);">table_restaurant</span>
+                        <p style="font-weight:600; margin-top:8px;">Table <span x-text="orderSuccess?.table_number"></span></p>
+                    </div>
+                </div>
+
+                <p style="color:var(--color-text-light); margin-top:32px;">
+                    Made with ❤️ by Jaxon (age 9)
+                </p>
+
+                <button class="btn btn-primary btn-lg" style="margin-top:32px;" @click="view = 'home'">
+                    Back to Shop
+                </button>
+            </div>
+        </template>
+
+        <!-- ============ ABOUT VIEW ============ -->
+        <template x-if="view === 'about'">
+            <div style="padding:40px 20px; max-width:700px; margin:0 auto;">
+                <div style="text-align:center; margin-bottom:32px;">
+                    <span style="font-size:5rem; display:block; margin-bottom:16px;">👦</span>
+                    <h2 style="font-size:2.5rem; margin-bottom:16px;">Hi, I'm Jaxon!</h2>
+                </div>
+
+                <p style="font-size:1.1rem; line-height:1.8; margin-bottom:24px;">
+                    I'm <strong style="color:var(--color-primary);">9 years old</strong> and I've been making candles and wax melts for a while now. I also have a <strong style="color:var(--color-accent);">3D printer</strong> which is super cool — I design things on the computer and then they come to life!
+                </p>
+
+                <div style="background:var(--color-bg); border-left:4px solid var(--color-primary); padding:24px; border-radius:var(--radius-md); margin-bottom:32px;">
+                    <p style="font-style:italic; font-size:1.1rem; color:var(--color-text); margin:0;">
+                        "I love making things because it's fun and I can express myself through my creations. Every candle is hand-poured by me. Every wax melt is made with love. Every 3D print is designed by me."
+                    </p>
+                </div>
+
+                <h3 style="margin-bottom:16px;">What I Make:</h3>
+                <div style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center;">
+                    <span style="background:rgba(255,107,53,0.1); color:var(--color-primary); padding:8px 16px; border-radius:20px; font-weight:600; font-size:0.9rem;">🕯️ Soy Candles</span>
+                    <span style="background:rgba(0,184,154,0.1); color:var(--color-accent); padding:8px 16px; border-radius:20px; font-weight:600; font-size:0.9rem;">🧊 Wax Melts</span>
+                    <span style="background:rgba(157,0,255,0.1); color:#9D00FF; padding:8px 16px; border-radius:20px; font-weight:600; font-size:0.9rem;">🎲 3D Prints</span>
+                    <span style="background:rgba(255,107,53,0.1); color:var(--color-primary); padding:8px 16px; border-radius:20px; font-weight:600; font-size:0.9rem;">✨ Custom Orders</span>
+                </div>
+
+                <div style="text-align:center; margin-top:40px;">
+                    <button class="btn btn-primary btn-lg" @click="openFirstCategory()">
+                        Shop My Products →
+                    </button>
+                </div>
+            </div>
+        </template>
+
+        <div class="modal-overlay" x-show="selectedProduct" x-transition.opacity @click="closeProduct()"></div>
+        <div class="product-modal" x-show="selectedProduct" x-transition>
+            <template x-if="selectedProduct">
+                <div class="product-modal-card">
+                    <button class="modal-close" @click="closeProduct()" aria-label="Close product details">
+                        <span class="material-icons">close</span>
+                    </button>
+                    <div class="product-modal-grid">
+                        <div class="product-modal-media">
+                            <img :src="productImage(selectedProduct, 'card')" :alt="selectedProduct.name" class="product-modal-image" />
+                        </div>
+                        <div class="product-modal-content">
+                            <div class="product-modal-topline">
+                                <span class="product-badge" x-text="productCategoryLabel(selectedProduct)"></span>
+                                <span class="stock-pill" :class="inventoryTone(selectedProduct)" x-text="inventoryLabel(selectedProduct)"></span>
+                            </div>
+                            <h2 class="product-modal-title" x-text="selectedProduct.name"></h2>
+                            <p class="product-modal-desc" x-text="selectedProduct.desc || categoryDescription(productCategoryLabel(selectedProduct))"></p>
+                            <div class="product-tag-row">
+                                <template x-for="tag in productTags(selectedProduct)" :key="tag">
+                                    <span class="product-tag-chip" x-text="tag"></span>
+                                </template>
+                            </div>
+                            <div class="product-modal-price" x-text="formatPrice(selectedProduct.price)"></div>
+                            <ul class="product-highlights">
+                                <template x-for="highlight in productHighlights(selectedProduct)" :key="highlight">
+                                    <li x-text="highlight"></li>
+                                </template>
+                            </ul>
+                            <p class="product-modal-note">Need something more personal? Add a note at checkout for simple custom requests, names, or gifting details.</p>
+                            <div class="product-modal-actions">
+                                <button class="btn btn-secondary" @click="closeProduct()">Keep Browsing</button>
+                                <button class="btn btn-primary" @click="addToCart(selectedProduct); closeProduct()">Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Jaxon's Workshop</h4>
+                    <p>Handmade candles, wax melts, and 3D prints made in small batches.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Shop</h4>
+                    <template x-for="category in getCategories()" :key="'footer-' + category">
+                        <a href="#" @click.prevent="openCategory(category)" x-text="category"></a>
+                    </template>
+                </div>
+                <div class="footer-section">
+                    <h4>Info</h4>
+                    <a href="#" @click.prevent="view = 'about'">About Jaxon</a>
+                    <a href="/terms.html">Terms &amp; Conditions</a>
+                    <a href="/privacy.html">Privacy Policy</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span x-text="'© ' + new Date().getFullYear() + ' Jaxons Workshop'"></span>
+            </div>
+        </footer>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
+
+

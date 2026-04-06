@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table QR Codes - Jaxon's Workshop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #0a0a12;
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+            font-family: 'Nunito', sans-serif;
+        }
+        h1 {
+            text-align: center;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 900;
+            font-size: 1.8rem;
+            color: #ff6b35;
+            margin-bottom: 4px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+        .qr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .qr-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .qr-card:hover {
+            transform: translateY(-4px);
+            border-color: #ff6b35;
+        }
+        .qr-card img { width: 180px; height: 180px; margin-bottom: 12px; }
+        .table-num { color: #ff6b35; font-size: 1.3rem; font-weight: 900; margin-bottom: 4px; }
+        .table-label { color: #888; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+        .btn-print {
+            background: #ff6b35;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-print:hover { background: #ff8c42; }
+        .url-display { color: #444; font-size: 0.7rem; margin-top: 8px; word-break: break-all; }
+        .header-bar {
+            max-width: 1200px;
+            margin: 0 auto 20px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-back {
+            background: #333;
+            color: #fff;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+        .btn-back:hover { background: #444; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        <a href="staff.html" class="btn-back">← Admin Board</a>
+        <span style="color:#ff6b35; font-weight:900;">🕯️ Table QR Codes</span>
+        <button class="btn-print" onclick="window.print()">Print All</button>
+    </div>
+
+    <h1>Jaxon's Workshop</h1>
+    <p class="subtitle">Print and laminate these QR codes for each table</p>
+
+    <div class="qr-grid" id="qrGrid"></div>
+
+    <script>
+        const BASE_URL = 'http://localhost:3006';
+        const NUM_TABLES = 10;
+
+        const grid = document.getElementById('qrGrid');
+        for (let i = 1; i <= NUM_TABLES; i++) {
+            const card = document.createElement('div');
+            card.className = 'qr-card';
+            card.innerHTML = `
+                <img src="${BASE_URL}/api/qr/${i}" alt="Table ${i} QR Code" loading="lazy">
+                <div class="table-num">Table ${i}</div>
+                <div class="table-label">Scan to order</div>
+                <button class="btn-print" onclick="printQR(${i})">Print</button>
+                <div class="url-display">${BASE_URL}/?table=${i}</div>
+            `;
+            grid.appendChild(card);
+        }
+
+        function printQR(table) {
+            const win = window.open(`${BASE_URL}/api/qr/${table}`, '_blank');
+            win.onload = () => { win.print(); win.close(); };
+        }
+    </script>
+</body>
+</html>

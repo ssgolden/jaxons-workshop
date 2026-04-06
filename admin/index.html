@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Jaxon's Workshop</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="../admin-style.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body x-data="adminApp()" x-cloak>
+    <!-- Login Screen -->
+    <template x-if="!isLoggedIn">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-logo">
+                    <span class="material-icons">auto_awesome</span>
+                    <h1>Jaxon's Workshop</h1>
+                    <p>Admin Dashboard</p>
+                </div>
+
+                <!-- PIN Login -->
+                <div class="login-form">
+                    <h2>Quick Login</h2>
+                    <p class="login-subtitle">Enter your 4-digit PIN</p>
+
+                    <div class="pin-input-container">
+                        <input type="text"
+                               x-model="pin"
+                               maxlength="4"
+                               placeholder="0000"
+                               class="pin-input"
+                               @input="pin = pin.replace(/[^0-9]/g, '')"
+                               @keydown.enter="loginWithPin()">
+                    </div>
+
+                    <button class="btn btn-primary btn-block" @click="loginWithPin()" :disabled="pin.length !== 4">
+                        Login
+                    </button>
+
+                    <div class="login-divider">
+                        <span>or</span>
+                    </div>
+
+                    <button class="btn btn-secondary btn-block" @click="showEmailLogin = !showEmailLogin">
+                        <span class="material-icons" style="font-size:1rem; margin-right:6px;">email</span>
+                        <span x-text="showEmailLogin ? 'Use PIN instead' : 'Login with Email'"></span>
+                    </button>
+
+                    <!-- Email Login Form -->
+                    <div x-show="showEmailLogin" x-transition class="email-login-form">
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" x-model="email" class="form-input" placeholder="admin@jaxons.com">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" x-model="password" class="form-input" placeholder="••••••••">
+                        </div>
+                        <button class="btn btn-primary btn-block" @click="loginWithEmail()">
+                            Login with Email
+                        </button>
+                    </div>
+
+                    <p class="login-error" x-show="loginError" x-text="loginError"></p>
+                </div>
+
+                <div class="login-footer">
+                    <p>Use your admin PIN or email login.</p>
+                    <p>Ask the site owner if you need access.</p>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Admin Dashboard -->
+    <template x-if="isLoggedIn">
+        <div class="admin-layout">
+            <!-- Sidebar -->
+            <aside class="sidebar" :class="{ 'collapsed': sidebarCollapsed }">
+                <div class="sidebar-header">
+                    <span class="material-icons">auto_awesome</span>
+                    <span class="sidebar-title" x-show="!sidebarCollapsed">Jaxon's Admin</span>
+                    <button class="sidebar-toggle" @click="sidebarCollapsed = !sidebarCollapsed">
+                        <span class="material-icons">menu</span>
+                    </button>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <a href="#" class="nav-item" :class="{ 'active': currentView === 'dashboard' }" @click.prevent="currentView = 'dashboard'">
+                        <span class="material-icons">dashboard</span>
+                        <span class="nav-text" x-show="!sidebarCollapsed">Dashboard</span>
+                    </a>
+                    <a href="#" class="nav-item" :class="{ 'active': currentView === 'products' }" @click.prevent="currentView = 'products'">
+                        <span class="material-icons">inventory</span>
+                        <span class="nav-text" x-show="!sidebarCollapsed">Products</span>
+                    </a>
+                    <a href="#" class="nav-item" :class="{ 'active': currentView === 'orders' }" @click.prevent="currentView = 'orders'">
+                        <span class="material-icons">shopping_bag</span>
+                        <span class="nav-text" x-show="!sidebarCollapsed">Orders</span>
+                        <span class="nav-badge" x-show="!sidebarCollapsed && newOrderCount > 0" x-text="newOrderCount"></span>
+                    </a>
+                    <a href="#" class="nav-item" :class="{ 'active': currentView === 'menus' }" @click.prevent="currentView = 'menus'">
+                        <span class="material-icons">restaurant_menu</span>
+                        <span class="nav-text" x-show="!sidebarCollapsed">Menus</span>
+                    </a>
+                    <a href="#" class="nav-item" :class="{ 'active': currentView === 'analytics' }" @click.prevent="currentView = 'analytics'">
+                        <span class="material-icons">analytics</span>
+                        <span class="nav-text" x-show="!sidebarCollapsed">Analytics</span>
+                    </a>
+                    <a href="#" class="nav-item" :class="{ 'active': currentView === 'settings' }" @click.prevent="currentView = 'settings'">
+                        <span class="material-icons">settings</span>
+                        <span class="nav-text" x-show="!sidebarCollapsed">Settings</span>
+                    </a>
+                </nav>
+
+                <div class="sidebar-footer">
+                    <a href="#" class="nav-item" @click.prevent="logout()">
+                        <span class="material-icons">logout</span>
+                        <span class="nav-text" x-show="!sidebarCollapsed">Logout</span>
+                    </a>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Top Bar -->
+                <header class="top-bar">
+                    <div class="top-bar-left">
+                        <button class="icon-btn" @click="sidebarCollapsed = !sidebarCollapsed">
+                            <span class="material-icons">menu</span>
+                        </button>
+                        <h2 class="page-title" x-text="getPageTitle()"></h2>
+                    </div>
+                    <div class="top-bar-right">
+                        <div class="notification-bell" @click="showNotifications = !showNotifications">
+                            <span class="material-icons">notifications</span>
+                            <span class="notification-dot" x-show="newOrderCount > 0"></span>
+                        </div>
+                        <div class="user-menu">
+                            <span class="user-name" x-text="user?.name || 'Admin'"></span>
+                            <span class="user-role" x-text="user?.role || 'Admin'"></span>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Dashboard View -->
+                <template x-if="currentView === 'dashboard'">
+                    <div class="dashboard-view">
+                        <!-- Stats Cards -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background:rgba(255,107,53,0.1);">
+                                    <span class="material-icons" style="color:#FF6B35;">shopping_bag</span>
+                                </div>
+                                <div class="stat-content">
+                                    <p class="stat-label">Total Orders</p>
+                                    <p class="stat-value" x-text="analytics?.totalOrders || 0"></p>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background:rgba(0,184,154,0.1);">
+                                    <span class="material-icons" style="color:#00B89A;">euro</span>
+                                </div>
+                                <div class="stat-content">
+                                    <p class="stat-label">Total Sales</p>
+                                    <p class="stat-value" x-text="formatCurrency(analytics?.totalSales || 0)"></p>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background:rgba(157,0,255,0.1);">
+                                    <span class="material-icons" style="color:#9D00FF;">inventory</span>
+                                </div>
+                                <div class="stat-content">
+                                    <p class="stat-label">Products</p>
+                                    <p class="stat-value" x-text="products?.length || 0"></p>
+                                </div>
+                            </div>
+                            <div class="stat-card warning" x-show="lowStockCount > 0">
+                                <div class="stat-icon" style="background:rgba(239,68,68,0.1);">
+                                    <span class="material-icons" style="color:#EF4444;">warning</span>
+                                </div>
+                                <div class="stat-content">
+                                    <p class="stat-label">Low Stock</p>
+                                    <p class="stat-value" x-text="lowStockCount"></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sales Chart -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Sales Overview</h3>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm" :class="chartPeriod === '7days' ? 'btn-primary' : 'btn-secondary'" @click="loadSalesChart('7days')">7 Days</button>
+                                    <button class="btn btn-sm" :class="chartPeriod === '30days' ? 'btn-primary' : 'btn-secondary'" @click="loadSalesChart('30days')">30 Days</button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="salesChart" height="80"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Recent Orders & Low Stock -->
+                        <div class="dashboard-grid">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Recent Orders</h3>
+                                    <button class="btn btn-sm btn-secondary" @click="currentView = 'orders'">View All</button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="order-list">
+                                        <template x-for="order in recentOrders" :key="order.id">
+                                            <div class="order-list-item">
+                                                <div class="order-list-info">
+                                                    <p class="order-list-number" x-text="order.order_number"></p>
+                                                    <p class="order-list-customer" x-text="order.customer_name"></p>
+                                                </div>
+                                                <div class="order-list-details">
+                                                    <span class="status-badge" :class="'status-' + order.status" x-text="order.status"></span>
+                                                    <span class="order-list-total" x-text="formatCurrency(order.total)"></span>
+                                                </div>
+                                            </div>
+                                        </template>
+                                        <p class="empty-text" x-show="recentOrders.length === 0">No orders yet</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card" x-show="lowStockProducts.length > 0">
+                                <div class="card-header">
+                                    <h3 class="card-title">⚠️ Low Stock Alert</h3>
+                                    <button class="btn btn-sm btn-secondary" @click="currentView = 'products'">Manage</button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="order-list">
+                                        <template x-for="product in lowStockProducts" :key="product.id">
+                                            <div class="order-list-item">
+                                                <div class="order-list-info">
+                                                    <p class="order-list-number" x-text="product.name"></p>
+                                                    <p class="order-list-customer">Only <span x-text="product.inventory_quantity"></span> left</p>
+                                                </div>
+                                                <div class="order-list-details">
+                                                    <span class="status-badge status-warning">Restock</span>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Products View -->
+                <template x-if="currentView === 'products'">
+                    <div class="products-view">
+                        <div class="view-header">
+                            <h3>Product Management</h3>
+                            <button class="btn btn-primary" @click="showProductModal = true; editingProduct = null; resetProductForm()">
+                                <span class="material-icons" style="font-size:1.1rem; margin-right:6px;">add</span>
+                                Add Product
+                            </button>
+                        </div>
+
+                        <!-- Products Table -->
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Product</th>
+                                                <th>Category</th>
+                                                <th>Price</th>
+                                                <th>Inventory</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="product in products" :key="product.id">
+                                                <tr>
+                                                    <td>
+                                                        <div class="product-cell">
+                                                            <div class="product-image" x-show="JSON.parse(product.images || '[]').length > 0">
+                                                                <img :src="JSON.parse(product.images || '[]')[0]?.thumb || ''" alt="">
+                                                            </div>
+                                                            <div class="product-image-placeholder" x-show="JSON.parse(product.images || '[]').length === 0">
+                                                                <span class="material-icons">image</span>
+                                                            </div>
+                                                            <div class="product-info">
+                                                                <p class="product-name" x-text="product.name"></p>
+                                                                <p class="product-sku" x-text="product.sku || 'No SKU'"></p>
+                                                                <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">
+                                                                    <span class="category-badge" x-show="product.metadata?.featured">Featured</span>
+                                                                    <span class="category-badge" x-show="product.metadata?.bestseller">Bestseller</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <span class="category-badge" x-text="product.category"></span>
+                                                    </td>
+                                                    <td class="price-cell" x-text="formatCurrency(product.price)"></td>
+                                                    <td>
+                                                        <span class="inventory-badge" :class="product.inventory_quantity <= product.low_stock_threshold ? 'low' : 'ok'" x-text="product.inventory_quantity"></span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="status-badge" :class="'status-' + product.status" x-text="product.status"></span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="action-buttons">
+                                                            <button class="icon-btn" @click="editProduct(product)" title="Edit">
+                                                                <span class="material-icons">edit</span>
+                                                            </button>
+                                                            <button class="icon-btn icon-btn-danger" @click="deleteProduct(product.id)" title="Delete">
+                                                                <span class="material-icons">delete</span>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                    <p class="empty-text" x-show="products.length === 0">No products yet. Click "Add Product" to create one.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Orders View -->
+                <template x-if="currentView === 'orders'">
+                    <div class="orders-view">
+                        <div class="view-header">
+                            <h3>Order Management</h3>
+                            <div class="filter-group">
+                                <button class="btn btn-sm" :class="orderFilter === '' ? 'btn-primary' : 'btn-secondary'" @click="orderFilter = ''; loadOrders()">All</button>
+                                <button class="btn btn-sm" :class="orderFilter === 'new' ? 'btn-primary' : 'btn-secondary'" @click="orderFilter = 'new'; loadOrders('new')">New</button>
+                                <button class="btn btn-sm" :class="orderFilter === 'processing' ? 'btn-primary' : 'btn-secondary'" @click="orderFilter = 'processing'; loadOrders('processing')">Processing</button>
+                                <button class="btn btn-sm" :class="orderFilter === 'ready' ? 'btn-primary' : 'btn-secondary'" @click="orderFilter = 'ready'; loadOrders('ready')">Ready</button>
+                                <button class="btn btn-sm" :class="orderFilter === 'completed' ? 'btn-primary' : 'btn-secondary'" @click="orderFilter = 'completed'; loadOrders('completed')">Completed</button>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Order</th>
+                                                <th>Customer</th>
+                                                <th>Type</th>
+                                                <th>Items</th>
+                                                <th>Total</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="order in orders" :key="order.id">
+                                                <tr>
+                                                    <td>
+                                                        <p class="order-number" x-text="order.order_number"></p>
+                                                        <p class="order-date" x-text="formatDate(order.created_at)"></p>
+                                                    </td>
+                                                    <td>
+                                                        <p class="customer-name" x-text="order.customer_name"></p>
+                                                        <p class="customer-contact" x-text="order.phone || 'No phone'"></p>
+                                                    </td>
+                                                    <td>
+                                                        <span class="type-badge" :class="'type-' + order.order_type">
+                                                            <span class="material-icons" style="font-size:0.9rem;" x-text="order.order_type === 'pickup' ? 'store' : 'home'"></span>
+                                                            <span x-text="order.order_type"></span>
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <p class="items-count" x-text="(JSON.parse(order.items) || []).length + ' items'"></p>
+                                                    </td>
+                                                    <td class="price-cell" x-text="formatCurrency(order.total)"></td>
+                                                    <td>
+                                                        <select class="status-select"
+                                                                :class="'status-' + order.status"
+                                                                @change="updateOrderStatus(order.id, $event.target.value)">
+                                                            <option value="new" :selected="order.status === 'new'">New</option>
+                                                            <option value="confirmed" :selected="order.status === 'confirmed'">Confirmed</option>
+                                                            <option value="processing" :selected="order.status === 'processing'">Processing</option>
+                                                            <option value="ready" :selected="order.status === 'ready'">Ready</option>
+                                                            <option value="fulfilled" :selected="order.status === 'fulfilled'">Fulfilled</option>
+                                                            <option value="completed" :selected="order.status === 'completed'">Completed</option>
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <div class="action-buttons">
+                                                            <button class="icon-btn" @click="viewOrder(order)" title="View">
+                                                                <span class="material-icons">visibility</span>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                    <p class="empty-text" x-show="orders.length === 0">No orders found</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Analytics View -->
+                <template x-if="currentView === 'analytics'">
+                    <div class="analytics-view">
+                        <div class="view-header">
+                            <h3>Analytics & Reports</h3>
+                        </div>
+
+                        <div class="analytics-grid">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Sales Trend</h3>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="analyticsChart" height="100"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Top Products</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="top-list">
+                                        <template x-for="(product, index) in topProducts" :key="product.name">
+                                            <div class="top-item">
+                                                <span class="top-rank" x-text="'#' + (index + 1)"></span>
+                                                <div class="top-info">
+                                                    <p class="top-name" x-text="product.name"></p>
+                                                    <p class="top-meta" x-text="product.quantity + ' sold'"></p>
+                                                </div>
+                                                <span class="top-value" x-text="formatCurrency(product.revenue)"></span>
+                                            </div>
+                                        </template>
+                                        <p class="empty-text" x-show="topProducts.length === 0">No sales data yet</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Menus/Categories View -->
+                <template x-if="currentView === 'menus'">
+                    <div class="menus-view">
+                        <div class="view-header">
+                            <h3>Menu & Category Management</h3>
+                            <button class="btn btn-primary" @click="showCategoryModal = true; editingCategory = null; resetCategoryForm()">
+                                <span class="material-icons" style="font-size:1.1rem; margin-right:6px;">add</span>
+                                Add Category
+                            </button>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Icon</th>
+                                                <th>Name</th>
+                                                <th>Slug</th>
+                                                <th>Parent</th>
+                                                <th>Position</th>
+                                                <th>Type</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="cat in categories" :key="cat.id">
+                                                <tr>
+                                                    <td>
+                                                        <span class="material-icons" x-text="cat.icon || 'folder'" style="color:var(--admin-primary);"></span>
+                                                    </td>
+                                                    <td>
+                                                        <p class="product-name" x-text="cat.name"></p>
+                                                        <p class="product-sku" x-text="cat.description || 'No description'"></p>
+                                                    </td>
+                                                    <td>
+                                                        <code x-text="cat.slug"></code>
+                                                    </td>
+                                                    <td>
+                                                        <span class="category-badge" x-text="getParentCategoryName(cat.parent_id) || 'None'"></span>
+                                                    </td>
+                                                    <td x-text="cat.position"></td>
+                                                    <td>
+                                                        <span class="status-badge" :class="cat.is_menu ? 'status-confirmed' : 'status-draft'"
+                                                              x-text="cat.is_menu ? 'Main Menu' : 'Subcategory'"></span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="action-buttons">
+                                                            <button class="icon-btn" @click="editCategory(cat)" title="Edit">
+                                                                <span class="material-icons">edit</span>
+                                                            </button>
+                                                            <button class="icon-btn icon-btn-danger" @click="deleteCategory(cat.id)" title="Delete">
+                                                                <span class="material-icons">delete</span>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                    <p class="empty-text" x-show="categories.length === 0">No categories yet. Click "Add Category" to create one.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Settings View -->
+                <template x-if="currentView === 'settings'">
+                    <div class="settings-view">
+                        <div class="view-header">
+                            <h3>Store Settings</h3>
+                        </div>
+
+                        <div class="settings-grid">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">General Settings</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label class="form-label">Store Name</label>
+                                        <input type="text" x-model="settings.store_name" class="form-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Currency Symbol</label>
+                                        <input type="text" x-model="settings.currency_symbol" class="form-input" maxlength="3">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Free Shipping Threshold</label>
+                                        <input type="number" x-model="settings.free_shipping_threshold" class="form-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Delivery Fee</label>
+                                        <input type="number" x-model="settings.delivery_fee" class="form-input">
+                                    </div>
+                                    <button class="btn btn-primary" @click="saveSettings()">Save Settings</button>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Fulfillment Settings</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label class="form-label">Pickup Ready Time (Hours)</label>
+                                        <input type="number" x-model="settings.pickup_ready_time" class="form-input" min="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Delivery Time Text</label>
+                                        <input type="text" x-model="settings.delivery_time_text" class="form-input" placeholder="2-4 business days">
+                                    </div>
+                                    <button class="btn btn-primary" @click="saveSettings()">Save Fulfillment Settings</button>
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">Homepage Merchandising</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-group">
+                                        <label class="form-label">Hero Subtitle</label>
+                                        <textarea x-model="settings.home_hero_subtitle" class="form-input" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Featured Section Heading</label>
+                                        <input type="text" x-model="settings.home_featured_heading" class="form-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Featured Section Subtitle</label>
+                                        <input type="text" x-model="settings.home_featured_subtitle" class="form-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Custom Orders Title</label>
+                                        <input type="text" x-model="settings.home_custom_title" class="form-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Custom Orders Text</label>
+                                        <textarea x-model="settings.home_custom_text" class="form-input" rows="4"></textarea>
+                                    </div>
+                                    <button class="btn btn-primary" @click="saveSettings()">Save Homepage Content</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </main>
+        </div>
+    </template>
+
+    <!-- Product Modal -->
+    <div class="modal-overlay" x-show="showProductModal" x-transition>
+        <div class="modal" @click.away="showProductModal = false">
+            <div class="modal-header">
+                <h3 x-text="editingProduct ? 'Edit Product' : 'Add New Product'"></h3>
+                <button class="icon-btn" @click="showProductModal = false">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Product Name *</label>
+                    <input type="text" x-model="productForm.name" class="form-input" placeholder="e.g., Vanilla Dream Candle">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Category *</label>
+                        <select x-model="productForm.category" class="form-input">
+                            <option value="" disabled>Select a category</option>
+                            <template x-for="cat in categories" :key="cat.id">
+                                <option :value="cat.slug" x-text="cat.name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Price (€) *</label>
+                        <input type="number" x-model="productForm.price" class="form-input" step="0.01" placeholder="9.99">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Short Description</label>
+                    <input type="text" x-model="productForm.short_description" class="form-input" placeholder="Brief description for product cards">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Full Description</label>
+                    <textarea x-model="productForm.description" class="form-input" rows="4" placeholder="Detailed product description"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">SKU</label>
+                        <input type="text" x-model="productForm.sku" class="form-input" placeholder="JXN-001">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Inventory Quantity</label>
+                        <input type="number" x-model="productForm.inventory_quantity" class="form-input" placeholder="50">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select x-model="productForm.status" class="form-input">
+                        <option value="active">Active</option>
+                        <option value="draft">Draft</option>
+                        <option value="archived">Archived</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" x-model="productForm.metadata.featured" style="margin-right:8px;">
+                            Feature on homepage
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" x-model="productForm.metadata.bestseller" style="margin-right:8px;">
+                            Mark as bestseller
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" x-model="productForm.track_inventory" style="margin-right:8px;">
+                        Track Inventory
+                    </label>
+                </div>
+                <div class="form-group" x-show="productForm.track_inventory">
+                    <label class="form-label">Low Stock Threshold</label>
+                    <input type="number" x-model="productForm.low_stock_threshold" class="form-input" placeholder="5">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Product Images</label>
+                    <div class="image-upload-area" x-show="productForm.images?.length > 0">
+                        <template x-for="(img, idx) in productForm.images" :key="idx">
+                            <div class="image-preview">
+                                <img :src="img.url || img" alt="">
+                                <button class="icon-btn icon-btn-sm" @click="productForm.images.splice(idx, 1)">
+                                    <span class="material-icons">close</span>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                    <input type="file" id="productImages" accept="image/*" multiple class="form-input" @change="handleImageUpload($event)">
+                    <p class="form-help">Upload product images (max 10, 5MB each)</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @click="showProductModal = false">Cancel</button>
+                <button class="btn btn-primary" @click="saveProduct()" :disabled="!productForm.name || !productForm.price">
+                    <span x-text="editingProduct ? 'Update Product' : 'Create Product'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order View Modal -->
+    <div class="modal-overlay" x-show="showOrderModal" x-transition>
+        <div class="modal modal-lg" @click.away="showOrderModal = false">
+            <div class="modal-header">
+                <h3>Order <span x-text="selectedOrder?.order_number"></span></h3>
+                <button class="icon-btn" @click="showOrderModal = false">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div x-show="selectedOrder">
+                    <div class="order-detail-header">
+                        <div>
+                            <p class="detail-label">Customer</p>
+                            <p class="detail-value" x-text="selectedOrder.customer_name"></p>
+                            <p class="detail-value-small" x-text="selectedOrder.customer_email"></p>
+                            <p class="detail-value-small" x-text="selectedOrder.phone"></p>
+                        </div>
+                        <div>
+                            <p class="detail-label">Shipping Address</p>
+                            <p class="detail-value" x-text="selectedOrder.address || 'Pickup order'"></p>
+                            <p class="detail-value-small" x-text="((selectedOrder.city || '') + ' ' + (selectedOrder.postal_code || '')).trim()"></p>
+                        </div>
+                        <div>
+                            <p class="detail-label">Order Details</p>
+                            <p class="detail-value" x-text="selectedOrder.order_type"></p>
+                            <p class="detail-value-small" x-text="formatDate(selectedOrder.created_at)"></p>
+                        </div>
+                    </div>
+
+                    <h4>Items</h4>
+                    <div class="order-items-list">
+                        <template x-for="item in (selectedOrder?.items || [])" :key="item.name">
+                            <div class="order-item-row">
+                                <div class="order-item-info">
+                                    <p class="item-name" x-text="item.name"></p>
+                                    <p class="item-meta" x-text="'Qty: ' + (item.quantity || 1)"></p>
+                                </div>
+                                <p class="item-price" x-text="formatCurrency(item.price * (item.quantity || 1))"></p>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="order-totals">
+                        <div class="total-row">
+                            <span>Subtotal</span>
+                            <span x-text="formatCurrency(selectedOrder.subtotal)"></span>
+                        </div>
+                        <div class="total-row" x-show="selectedOrder.shipping_cost > 0">
+                            <span>Shipping</span>
+                            <span x-text="formatCurrency(selectedOrder.shipping_cost)"></span>
+                        </div>
+                        <div class="total-row total">
+                            <span>Total</span>
+                            <span x-text="formatCurrency(selectedOrder.total)"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @click="showOrderModal = false">Close</button>
+                <select class="form-input" style="width:auto; margin-right:8px;"
+                        :value="selectedOrder?.status"
+                        @change="updateOrderStatus(selectedOrder.id, $event.target.value)">
+                    <option value="new">New</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="processing">Processing</option>
+                    <option value="ready">Ready</option>
+                    <option value="fulfilled">Fulfilled</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div class="modal-overlay" x-show="showCategoryModal" x-transition>
+        <div class="modal" @click.away="showCategoryModal = false">
+            <div class="modal-header">
+                <h3 x-text="editingCategory ? 'Edit Category' : 'Add New Category'"></h3>
+                <button class="icon-btn" @click="showCategoryModal = false">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Category Name *</label>
+                    <input type="text" x-model="categoryForm.name" class="form-input" placeholder="e.g., Candles">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Slug *</label>
+                    <input type="text" x-model="categoryForm.slug" class="form-input" placeholder="e.g., candles"
+                           @input="categoryForm.slug = categoryForm.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-')">
+                    <p class="form-help">URL-friendly name (lowercase, no spaces)</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea x-model="categoryForm.description" class="form-input" rows="3" placeholder="Category description"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Parent Category</label>
+                        <select x-model="categoryForm.parent_id" class="form-input">
+                            <option value="">None (Top Level)</option>
+                            <template x-for="cat in categories" :key="cat.id">
+                                <option :value="cat.id" x-text="cat.name" x-show="!editingCategory || cat.id !== editingCategory.id"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Display Position</label>
+                        <input type="number" x-model="categoryForm.position" class="form-input" placeholder="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Icon (Material Icons)</label>
+                    <input type="text" x-model="categoryForm.icon" class="form-input" placeholder="e.g., local_fire_department">
+                    <p class="form-help">Use <a href="https://fonts.google.com/icons" target="_blank">Material Icons</a> names</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" x-model="categoryForm.is_menu" style="margin-right:8px;">
+                        Main Menu Item (shows in main navigation)
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" @click="showCategoryModal = false">Cancel</button>
+                <button class="btn btn-primary" @click="saveCategory()" :disabled="!categoryForm.name || !categoryForm.slug">
+                    <span x-text="editingCategory ? 'Update Category' : 'Create Category'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div class="toast" :class="'toast-' + toast.type" x-show="toast.visible" x-transition>
+                <span class="material-icons" x-text="toast.type === 'success' ? 'check_circle' : toast.type === 'error' ? 'error' : 'info'"></span>
+                <span x-text="toast.message"></span>
+            </div>
+        </template>
+    </div>
+
+    <script>
+        const API_BASE = '/api/admin';
+
+        function adminApp() {
+            return {
+                // Auth state
+                isLoggedIn: false,
+                user: null,
+                email: '',
+                password: '',
+                pin: '',
+                loginError: '',
+                showEmailLogin: false,
+
+                // UI state
+                sidebarCollapsed: false,
+                currentView: 'dashboard',
+                showNotifications: false,
+                showProductModal: false,
+                showOrderModal: false,
+                showCategoryModal: false,
+                editingProduct: null,
+                selectedOrder: null,
+                editingCategory: null,
+
+                // Data
+                products: [],
+                orders: [],
+                analytics: {},
+                salesChart: null,
+                analyticsChart: null,
+                chartPeriod: '7days',
+                recentOrders: [],
+                lowStockProducts: [],
+                topProducts: [],
+                settings: {},
+                categories: [],
+                orderFilter: '',
+                newOrderCount: 0,
+
+                // Form state
+                productForm: {
+                    name: '',
+                    category: 'candles',
+                    price: '',
+                    short_description: '',
+                    description: '',
+                    sku: '',
+                    inventory_quantity: 0,
+                    track_inventory: true,
+                    low_stock_threshold: 5,
+                    status: 'active',
+                    images: [],
+                    metadata: {
+                        featured: false,
+                        bestseller: false
+                    }
+                },
+
+                categoryForm: {
+                    name: '',
+                    slug: '',
+                    description: '',
+                    parent_id: '',
+                    icon: '',
+                    position: 0,
+                    is_menu: true
+                },
+
+                // Toast notifications
+                toasts: [],
+
+                async adminFetch(url, options = {}) {
+                    const config = {
+                        credentials: 'same-origin',
+                        ...options
+                    };
+
+                    config.headers = {
+                        ...(options.headers || {})
+                    };
+
+                    const response = await fetch(url, config);
+                    if (response.status === 401) {
+                        this.isLoggedIn = false;
+                        this.user = null;
+                        this.loginError = 'Your session expired. Please login again.';
+                    }
+                    return response;
+                },
+
+                async init() {
+                    try {
+                        await this.fetchCurrentUser();
+                    } catch (e) {
+                        this.isLoggedIn = false;
+                    }
+
+                    // Setup Socket.io
+                    this.socket = io();
+                    this.socket.on('order:new', (order) => {
+                        this.showToast('New order received: ' + order.order_number, 'success');
+                        this.newOrderCount++;
+                        this.loadOrders();
+                        this.loadAnalytics();
+                    });
+
+                    this.socket.on('order:updated', (order) => {
+                        this.loadOrders();
+                        this.loadAnalytics();
+                    });
+
+                    if (this.isLoggedIn) {
+                        this.loadDashboard();
+                    }
+                },
+
+                async fetchCurrentUser() {
+                    const res = await this.adminFetch(`${API_BASE}/me`);
+                    if (!res.ok) throw new Error('Auth failed');
+                    const data = await res.json();
+                    this.user = data.user;
+                    this.isLoggedIn = true;
+                },
+
+                getPageTitle() {
+                    const titles = {
+                        dashboard: 'Dashboard',
+                        products: 'Products',
+                        orders: 'Orders',
+                        menus: 'Menus & Categories',
+                        analytics: 'Analytics',
+                        settings: 'Settings'
+                    };
+                    return titles[this.currentView] || 'Dashboard';
+                },
+
+                async loginWithPin() {
+                    if (this.pin.length !== 4) return;
+                    try {
+                        const res = await this.adminFetch(`${API_BASE}/login`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ pin: this.pin })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            this.user = data.user;
+                            this.isLoggedIn = true;
+                            this.loginError = '';
+                            this.pin = '';
+                            this.loadDashboard();
+                        } else {
+                            this.loginError = data.error;
+                        }
+                    } catch (e) {
+                        this.loginError = 'Login failed';
+                    }
+                },
+
+                async loginWithEmail() {
+                    try {
+                        const res = await this.adminFetch(`${API_BASE}/login`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: this.email, password: this.password })
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            this.user = data.user;
+                            this.isLoggedIn = true;
+                            this.loginError = '';
+                            this.loadDashboard();
+                        } else {
+                            this.loginError = data.error;
+                        }
+                    } catch (e) {
+                        this.loginError = 'Login failed';
+                    }
+                },
+
+                async logout() {
+                    await this.adminFetch(`${API_BASE}/logout`, { method: 'POST' });
+                    this.isLoggedIn = false;
+                    this.user = null;
+                    this.currentView = 'dashboard';
+                },
+
+                async loadDashboard() {
+                    await Promise.all([
+                        this.loadAnalytics(),
+                        this.loadProducts(),
+                        this.loadOrders(),
+                        this.loadSettings(),
+                        this.loadCategories()
+                    ]);
+                    this.loadSalesChart();
+                },
+
+                async loadAnalytics() {
+                    try {
+                        const res = await this.adminFetch(`${API_BASE}/analytics/summary`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.analytics = data;
+                            this.recentOrders = data.recentOrders || [];
+                            this.lowStockProducts = data.lowStock || [];
+                            this.topProducts = data.topProducts || [];
+                        }
+                    } catch (e) {
+                        console.error('Analytics load error:', e);
+                    }
+                },
+
+                async loadProducts() {
+                    try {
+                        const res = await this.adminFetch(`${API_BASE}/products`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.products = (data.products || []).map(product => ({
+                                ...product,
+                                metadata: typeof product.metadata === 'string'
+                                    ? JSON.parse(product.metadata || '{}')
+                                    : (product.metadata || {})
+                            }));
+                        }
+                    } catch (e) {
+                        console.error('Products load error:', e);
+                    }
+                },
+
+                async loadOrders(status = '') {
+                    try {
+                        const url = status ? `${API_BASE}/orders?status=${status}` : `${API_BASE}/orders`;
+                        const res = await this.adminFetch(url);
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.orders = data.orders || [];
+                        }
+                    } catch (e) {
+                        console.error('Orders load error:', e);
+                    }
+                },
+
+                async loadSettings() {
+                    try {
+                        const res = await this.adminFetch(`${API_BASE}/settings`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.settings = data.settings || {
+                                store_name: "Jaxon's Workshop",
+                                currency_symbol: '€',
+                                free_shipping_threshold: 50,
+                                delivery_fee: 5,
+                                stripe_enabled: false,
+                                stripe_public_key: '',
+                                stripe_secret_key: ''
+                            };
+                        }
+                    } catch (e) {
+                        console.error('Settings load error:', e);
+                    }
+                },
+
+                async loadSalesChart(period = '7days') {
+                    this.chartPeriod = period;
+                    try {
+                        const res = await this.adminFetch(`${API_BASE}/analytics/sales-chart?period=${period}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.renderSalesChart(data.salesData);
+                        }
+                    } catch (e) {
+                        console.error('Chart load error:', e);
+                    }
+                },
+
+                renderSalesChart(data) {
+                    const ctx = document.getElementById('salesChart');
+                    if (!ctx) return;
+
+                    if (this.salesChart) this.salesChart.destroy();
+
+                    this.salesChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: data.map(d => d.date),
+                            datasets: [{
+                                label: 'Revenue',
+                                data: data.map(d => d.revenue),
+                                borderColor: '#FF6B35',
+                                backgroundColor: 'rgba(255,107,53,0.1)',
+                                tension: 0.3,
+                                fill: true
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+                                x: { grid: { display: false } }
+                            }
+                        }
+                    });
+                },
+
+                resetProductForm() {
+                    this.productForm = {
+                        name: '',
+                        category: 'candles',
+                        price: '',
+                        short_description: '',
+                        description: '',
+                        sku: '',
+                        inventory_quantity: 0,
+                        track_inventory: true,
+                        low_stock_threshold: 5,
+                        status: 'active',
+                        images: [],
+                        metadata: {
+                            featured: false,
+                            bestseller: false
+                        }
+                    };
+                },
+
+                handleImageUpload(event) {
+                    const files = Array.from(event.target.files);
+                    files.forEach(file => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            this.productForm.images.push(e.target.result);
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                },
+
+                editProduct(product) {
+                    this.editingProduct = product;
+                    const metadata = typeof product.metadata === 'string'
+                        ? JSON.parse(product.metadata || '{}')
+                        : (product.metadata || {});
+                    this.productForm = {
+                        name: product.name,
+                        category: product.category,
+                        price: product.price,
+                        short_description: product.short_description || '',
+                        description: product.description || '',
+                        sku: product.sku || '',
+                        inventory_quantity: product.inventory_quantity,
+                        track_inventory: !!product.track_inventory,
+                        low_stock_threshold: product.low_stock_threshold || 5,
+                        status: product.status,
+                        images: JSON.parse(product.images || '[]'),
+                        metadata: {
+                            featured: !!metadata.featured,
+                            bestseller: !!metadata.bestseller
+                        }
+                    };
+                    this.showProductModal = true;
+                },
+
+                async saveProduct() {
+                    try {
+                        const payload = {
+                            ...this.productForm,
+                            images: JSON.stringify(this.productForm.images),
+                            metadata: this.productForm.metadata
+                        };
+
+                        const url = this.editingProduct
+                            ? `${API_BASE}/products/${this.editingProduct.id}`
+                            : `${API_BASE}/products`;
+
+                        const res = await this.adminFetch(url, {
+                            method: this.editingProduct ? 'PUT' : 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(payload)
+                        });
+
+                        const data = await res.json();
+
+                        if (res.ok) {
+                            this.showToast(this.editingProduct ? 'Product updated' : 'Product created', 'success');
+                            this.showProductModal = false;
+                            this.loadProducts();
+                        } else {
+                            this.showToast(data.error || 'Failed to save product', 'error');
+                        }
+                    } catch (e) {
+                        console.error('Save product error:', e);
+                        this.showToast('Failed to save product: ' + e.message, 'error');
+                    }
+                },
+
+                async deleteProduct(id) {
+                    if (!confirm('Are you sure you want to delete this product?')) return;
+                    try {
+                        const res = await this.adminFetch(`${API_BASE}/products/${id}`, {
+                            method: 'DELETE'
+                        });
+                        if (res.ok) {
+                            this.showToast('Product deleted', 'success');
+                            this.loadProducts();
+                        }
+                    } catch (e) {
+                        this.showToast('Failed to delete product', 'error');
+                    }
+                },
+
+                viewOrder(order) {
+                    this.selectedOrder = order;
+                    this.showOrderModal = true;
+                },
+
+                async updateOrderStatus(id, status) {
+                    try {
+                        const res = await this.adminFetch(`${API_BASE}/orders/${id}/status`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ status })
+                        });
+                        if (res.ok) {
+                            this.showToast('Order status updated', 'success');
+                            this.loadOrders();
+                            this.loadAnalytics();
+                        }
+                    } catch (e) {
+                        this.showToast('Failed to update order', 'error');
+                    }
+                },
+
+                async saveSettings() {
+                    try {
+                        const res = await this.adminFetch(`${API_BASE}/settings`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(this.settings)
+                        });
+                        if (res.ok) {
+                            this.showToast('Settings saved', 'success');
+                        }
+                    } catch (e) {
+                        this.showToast('Failed to save settings', 'error');
+                    }
+                },
+
+                async loadProducts() {
+                    try {
+                        const res = await this.adminFetch(`${API_BASE}/products`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.products = (data.products || []).map(product => ({
+                                ...product,
+                                metadata: typeof product.metadata === 'string'
+                                    ? JSON.parse(product.metadata || '{}')
+                                    : (product.metadata || {})
+                            }));
+                        }
+                    } catch (e) {
+                        console.error('Products load error:', e);
+                    }
+                },
+
+                async loadSettings() {
+                    try {
+                        const res = await this.adminFetch(`${API_BASE}/settings`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            const settings = data.settings || {};
+                            this.settings = {
+                                store_name: settings.store_name || "Jaxon's Workshop",
+                                currency_symbol: settings.currency_symbol || '€',
+                                free_shipping_threshold: Number(settings.free_shipping_threshold || 50),
+                                delivery_fee: Number(settings.delivery_fee || 5),
+                                home_hero_subtitle: settings.home_hero_subtitle || 'Beautiful soy candles, delightful wax melts & custom 3D prints - all handmade with love by me!',
+                                home_featured_heading: settings.home_featured_heading || 'Popular Items',
+                                home_featured_subtitle: settings.home_featured_subtitle || 'Handpicked favorites that everyone loves',
+                                home_custom_title: settings.home_custom_title || 'Need a personalized gift or custom 3D print?',
+                                home_custom_text: settings.home_custom_text || 'Even without a full custom-order form yet, you can still order something personal. Add your idea in the checkout notes and Jaxon can follow up on names, colors, scents, and simple custom requests.',
+                                stripe_enabled: settings.stripe_enabled === true || settings.stripe_enabled === 'true' || settings.stripe_enabled === '1',
+                                stripe_public_key: settings.stripe_public_key || '',
+                                stripe_secret_key: settings.stripe_secret_key || ''
+                            };
+                        }
+                    } catch (e) {
+                        console.error('Settings load error:', e);
+                    }
+                },
+
+                formatCurrency(value) {
+                    const symbol = this.settings.currency_symbol || '€';
+                    return `${symbol}${(value || 0).toFixed(2)}`;
+                },
+
+                showToast(message, type = 'info') {
+                    const id = Date.now();
+                    this.toasts.push({ id, message, type, visible: true });
+                    setTimeout(() => {
+                        const toast = this.toasts.find(t => t.id === id);
+                        if (toast) toast.visible = false;
+                        setTimeout(() => {
+                            this.toasts = this.toasts.filter(t => t.id !== id);
+                        }, 300);
+                    }, 3000);
+                },
+
+                formatCurrency(value) {
+                    const symbol = this.settings.currency_symbol || '€';
+                    return `${symbol}${(value || 0).toFixed(2)}`;
+                },
+
+                async loadSettings() {
+                    try {
+                        const res = await this.adminFetch(`${API_BASE}/settings`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            const settings = data.settings || {};
+                            this.settings = {
+                                store_name: settings.store_name || "Jaxon's Workshop",
+                                currency_symbol: settings.currency_symbol || '€',
+                                free_shipping_threshold: Number(settings.free_shipping_threshold || 50),
+                                delivery_fee: Number(settings.delivery_fee || 5),
+                                pickup_ready_time: Number(settings.pickup_ready_time || 2),
+                                delivery_time_text: settings.delivery_time_text || '2-4 business days',
+                                home_hero_subtitle: settings.home_hero_subtitle || 'Beautiful soy candles, delightful wax melts & custom 3D prints - all handmade with love by me!',
+                                home_featured_heading: settings.home_featured_heading || 'Popular Items',
+                                home_featured_subtitle: settings.home_featured_subtitle || 'Handpicked favorites that everyone loves',
+                                home_custom_title: settings.home_custom_title || 'Need a personalized gift or custom 3D print?',
+                                home_custom_text: settings.home_custom_text || 'Even without a full custom-order form yet, you can still order something personal. Add your idea in the checkout notes and Jaxon can follow up on names, colors, scents, and simple custom requests.'
+                            };
+                        }
+                    } catch (e) {
+                        console.error('Settings load error:', e);
+                    }
+                },
+
+                formatCurrency(value) {
+                    const symbol = this.settings.currency_symbol || '€';
+                    return `${symbol}${(value || 0).toFixed(2)}`;
+                },
+
+                formatDate(dateStr) {
+                    if (!dateStr) return '';
+                    const date = new Date(dateStr);
+                    return date.toLocaleDateString('en-IE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                },
+
+                get lowStockCount() {
+                    return this.lowStockProducts?.length || 0;
+                },
+
+                // Category/Menu management
+                async loadCategories() {
+                    try {
+                        const res = await this.adminFetch(`${API_BASE}/categories`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.categories = data.categories || [];
+                        }
+                    } catch (e) {
+                        console.error('Categories load error:', e);
+                    }
+                },
+
+                resetCategoryForm() {
+                    this.categoryForm = {
+                        name: '',
+                        slug: '',
+                        description: '',
+                        parent_id: '',
+                        icon: '',
+                        position: 0,
+                        is_menu: true
+                    };
+                },
+
+                editCategory(cat) {
+                    this.editingCategory = cat;
+                    this.categoryForm = {
+                        name: cat.name,
+                        slug: cat.slug,
+                        description: cat.description || '',
+                        parent_id: cat.parent_id || '',
+                        icon: cat.icon || '',
+                        position: cat.position,
+                        is_menu: !!cat.is_menu
+                    };
+                    this.showCategoryModal = true;
+                },
+
+                async saveCategory() {
+                    try {
+                        const url = this.editingCategory
+                            ? `${API_BASE}/categories/${this.editingCategory.id}`
+                            : `${API_BASE}/categories`;
+
+                        const res = await this.adminFetch(url, {
+                            method: this.editingCategory ? 'PUT' : 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(this.categoryForm)
+                        });
+
+                        const data = await res.json();
+
+                        if (res.ok) {
+                            this.showToast(this.editingCategory ? 'Category updated' : 'Category created', 'success');
+                            this.showCategoryModal = false;
+                            this.loadCategories();
+                        } else {
+                            this.showToast(data.error || 'Failed to save category', 'error');
+                        }
+                    } catch (e) {
+                        this.showToast('Failed to save category', 'error');
+                    }
+                },
+
+                async deleteCategory(id) {
+                    if (!confirm('Are you sure you want to delete this category?')) return;
+                    try {
+                        const res = await this.adminFetch(`${API_BASE}/categories/${id}`, {
+                            method: 'DELETE'
+                        });
+                        if (res.ok) {
+                            this.showToast('Category deleted', 'success');
+                            this.loadCategories();
+                        } else {
+                            const data = await res.json();
+                            this.showToast(data.error || 'Failed to delete category', 'error');
+                        }
+                    } catch (e) {
+                        this.showToast('Failed to delete category', 'error');
+                    }
+                },
+
+                getParentCategoryName(parentId) {
+                    if (!parentId) return null;
+                    const parent = this.categories.find(c => c.id == parentId);
+                    return parent ? parent.name : null;
+                }
+            }
+        }
+    </script>
+</body>
+</html>

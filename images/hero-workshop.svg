@@ -1,0 +1,183 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="500" viewBox="0 0 1200 500">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a0a20"/>
+      <stop offset="50%" style="stop-color:#0a1020"/>
+      <stop offset="100%" style="stop-color:#0a0a12"/>
+    </linearGradient>
+    <linearGradient id="shelfGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2a2a3e"/>
+      <stop offset="100%" style="stop-color:#1a1a2e"/>
+    </linearGradient>
+    <linearGradient id="tableGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a3728"/>
+      <stop offset="100%" style="stop-color:#2a1f15"/>
+    </linearGradient>
+    <linearGradient id="candleGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b35"/>
+      <stop offset="100%" style="stop-color:#cc5522"/>
+    </linearGradient>
+    <linearGradient id="waxGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d1b2"/>
+      <stop offset="100%" style="stop-color:#008877"/>
+    </linearGradient>
+    <linearGradient id="printerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#9d00ff"/>
+      <stop offset="100%" style="stop-color:#7700cc"/>
+    </linearGradient>
+    <linearGradient id="flameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd93d"/>
+      <stop offset="50%" style="stop-color:#ffaa00"/>
+      <stop offset="100%" style="stop-color:#ff6b35"/>
+    </linearGradient>
+    <linearGradient id="jarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.3)"/>
+      <stop offset="100%" style="stop-color:rgba(255,255,255,0.1)"/>
+    </linearGradient>
+
+    <!-- Glow filter -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Candle with flame -->
+    <g id="candleWithFlame">
+      <rect x="-10" y="-15" width="20" height="30" rx="3" fill="url(#candleGrad)"/>
+      <ellipse cx="0" cy="-15" rx="8" ry="4" fill="url(#jarGrad)"/>
+      <ellipse cx="0" cy="-15" rx="8" ry="3" fill="rgba(255,255,255,0.2)"/>
+      <g filter="url(#glow)">
+        <path id="flame" d="M0 -25 Q4 -35 0 -48 Q-4 -35 0 -25" fill="url(#flameGrad)">
+          <animate attributeName="d" values="M0 -25 Q4 -35 0 -48 Q-4 -35 0 -25; M0 -25 Q-4 -35 0 -48 Q4 -35 0 -25; M0 -25 Q4 -35 0 -48 Q-4 -35 0 -25" dur="0.3s" repeatCount="indefinite"/>
+        </path>
+      </g>
+    </g>
+
+    <!-- Wax melt container -->
+    <g id="waxContainer">
+      <rect x="-12" y="-8" width="24" height="16" rx="2" fill="url(#waxGrad)"/>
+      <rect x="-10" y="-6" width="20" height="12" fill="rgba(0,0,0,0.2)"/>
+      <circle cx="-5" cy="-3" r="2" fill="rgba(255,255,255,0.3)"/>
+      <circle cx="3" cy="-1" r="1.5" fill="rgba(255,255,255,0.3)"/>
+      <circle cx="-2" cy="3" r="1" fill="rgba(255,255,255,0.3)"/>
+      <circle cx="5" cy="2" r="1.5" fill="rgba(255,255,255,0.3)"/>
+    </g>
+
+    <!-- 3D Printer -->
+    <g id="printer3d">
+      <!-- Base -->
+      <rect x="-20" y="-15" width="40" height="30" rx="4" fill="url(#printerGrad)"/>
+      <!-- Screen -->
+      <rect x="-14" y="-10" width="28" height="20" rx="2" fill="#1a1a2e"/>
+      <!-- Print head -->
+      <rect x="-3" y="-6" width="6" height="12" fill="#00d1b2"/>
+      <!-- Print bed indicator -->
+      <path d="M-8 2 L0 10 L8 2" fill="none" stroke="#ffd93d" stroke-width="2"/>
+      <!-- Feet -->
+      <circle cx="-16" cy="15" r="3" fill="#333"/>
+      <circle cx="16" cy="15" r="3" fill="#333"/>
+    </g>
+
+    <!-- Sparkle -->
+    <g id="sparkle">
+      <path d="M0 -6 L1.5 -1.5 L6 0 L1.5 1.5 L0 6 L-1.5 1.5 L-6 0 L-1.5 -1.5 Z" fill="#ffd93d">
+        <animate attributeName="opacity" values="0.4;1;0.4" dur="1s" repeatCount="indefinite"/>
+      </path>
+    </g>
+
+    <!-- Bubble with text -->
+    <g id="speechBubble">
+      <ellipse cx="0" cy="-10" rx="40" ry="20" fill="rgba(255,255,255,0.95)"/>
+      <path d="M-10 8 L0 15 L10 8" fill="rgba(255,255,255,0.95)"/>
+    </g>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="500" fill="url(#skyGrad)"/>
+
+  <!-- Back shelves -->
+  <rect x="50" y="100" width="200" height="15" fill="url(#shelfGrad)"/>
+  <rect x="50" y="180" width="200" height="15" fill="url(#shelfGrad)"/>
+  <rect x="950" y="80" width="200" height="15" fill="url(#shelfGrad)"/>
+  <rect x="950" y="160" width="200" height="15" fill="url(#shelfGrad)"/>
+
+  <!-- Items on left shelves -->
+  <use href="#candleWithFlame" x="80" y="92"/>
+  <use href="#waxContainer" x="140" y="92"/>
+  <use href="#candleWithFlame" x="180" y="92"/>
+  <use href="#waxContainer" x="100" y="172"/>
+  <use href="#candleWithFlame" x="160" y="172"/>
+  <use href="#waxContainer" x="210" y="172"/>
+
+  <!-- Items on right shelves -->
+  <use href="#candleWithFlame" x="980" y="72"/>
+  <use href="#waxContainer" x="1040" y="72"/>
+  <use href="#printer3d" x="1100" y="75"/>
+  <use href="#waxContainer" x="1000" y="152"/>
+  <use href="#printer3d" x="1080" y="155"/>
+  <use href="#candleWithFlame" x="1140" y="152"/>
+
+  <!-- Work table in center -->
+  <rect x="350" y="320" width="500" height="20" fill="url(#tableGrad)"/>
+  <rect x="370" y="340" width="30" height="120" fill="url(#tableGrad)"/>
+  <rect x="800" y="340" width="30" height="120" fill="url(#tableGrad)"/>
+
+  <!-- Items on table -->
+  <use href="#candleWithFlame" x="420" y="312"/>
+  <use href="#waxContainer" x="500" y="312"/>
+  <use href="#printer3d" x="600" y="315"/>
+  <use href="#candleWithFlame" x="720" y="312"/>
+  <use href="#waxContainer" x="780" y="312"/>
+
+  <!-- Tools hanging on wall (left) -->
+  <g transform="translate(300, 150)">
+    <rect x="-15" y="-30" width="30" height="60" rx="2" fill="#444"/>
+    <circle cx="0" cy="-20" r="8" fill="none" stroke="#ff6b35" stroke-width="3"/>
+    <rect x="-3" y="0" width="6" height="25" fill="#666"/>
+  </g>
+
+  <!-- Tools hanging on wall (right) -->
+  <g transform="translate(900, 150)">
+    <rect x="-20" y="-25" width="40" height="50" rx="2" fill="#444"/>
+    <circle cx="-8" cy="-10" r="6" fill="none" stroke="#00d1b2" stroke-width="3"/>
+    <circle cx="8" cy="-10" r="6" fill="none" stroke="#9d00ff" stroke-width="3"/>
+    <path d="M0 5 L-5 20 L5 20 Z" fill="#ffd93d"/>
+  </g>
+
+  <!-- Floating sparkles everywhere -->
+  <use href="#sparkle" x="200" y="50"/>
+  <use href="#sparkle" x="400" y="80"/>
+  <use href="#sparkle" x="600" y="40"/>
+  <use href="#sparkle" x="800" y="70"/>
+  <use href="#sparkle" x="1000" y="50"/>
+  <use href="#sparkle" x="300" y="200"/>
+  <use href="#sparkle" x="500" y="180"/>
+  <use href="#sparkle" x="700" y="220"/>
+  <use href="#sparkle" x="900" y="190"/>
+  <use href="#sparkle" x="150" y="350"/>
+  <use href="#sparkle" x="1050" y="320"/>
+
+  <!-- Extra glow particles -->
+  <circle cx="250" cy="120" r="3" fill="#ff6b35" opacity="0.5">
+    <animate attributeName="opacity" values="0.3;0.7;0.3" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="450" cy="90" r="2" fill="#00d1b2" opacity="0.5">
+    <animate attributeName="opacity" values="0.3;0.7;0.3" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="650" cy="150" r="3" fill="#9d00ff" opacity="0.5">
+    <animate attributeName="opacity" values="0.3;0.7;0.3" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="850" cy="100" r="2" fill="#ffd93d" opacity="0.5">
+    <animate attributeName="opacity" values="0.3;0.7;0.3" dur="1.8s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="1100" cy="200" r="3" fill="#ff8fab" opacity="0.5">
+    <animate attributeName="opacity" values="0.3;0.7;0.3" dur="2.2s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Ground glow -->
+  <ellipse cx="600" cy="480" rx="400" ry="50" fill="rgba(255,107,53,0.1)"/>
+</svg>

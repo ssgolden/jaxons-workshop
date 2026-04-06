@@ -1,0 +1,29 @@
+{
+  "Candles": [
+    { "name": "Vanilla Dream", "desc": "Warm & cozy vanilla scent. Hand-poured soy wax in a glass jar. 180g.", "price": 8.50, "category": "candles" },
+    { "name": "Lavender Calm", "desc": "Relaxing lavender. Perfect for bedtime. Hand-poured soy wax in a glass jar. 180g.", "price": 8.50, "category": "candles" },
+    { "name": "Citrus Burst", "desc": "Fresh orange & lemon. Uplifting and energizing! Hand-poured soy wax in a glass jar. 180g.", "price": 8.50, "category": "candles" },
+    { "name": "Cinnamon Spice", "desc": "Warm cinnamon & clove. Like a cozy winter evening. Hand-poured soy wax in a glass jar. 180g.", "price": 9.00, "category": "candles" },
+    { "name": "Ocean Breeze", "desc": "Fresh sea salt & driftwood. Clean and refreshing. Hand-poured soy wax in a glass jar. 180g.", "price": 8.50, "category": "candles" },
+    { "name": "Rose Garden", "desc": "Beautiful rose & geranium. Smells like a spring garden! Hand-poured soy wax in a glass jar. 180g.", "price": 9.00, "category": "candles" }
+  ],
+  "Wax Melts": [
+    { "name": "Vanilla Cubes", "desc": "6 soy wax cubes. Strong vanilla throw. Lasts 20+ hours. Jaxon made these!", "price": 4.50, "category": "waxmelts" },
+    { "name": "Lavender Relax", "desc": "6 soy wax cubes. Calming lavender. Lasts 20+ hours.", "price": 4.50, "category": "waxmelts" },
+    { "name": "Citrus Mix", "desc": "6 soy wax cubes. Orange, lemon & lime. Uplifting blend! Lasts 20+ hours.", "price": 4.50, "category": "waxmelts" },
+    { "name": "Spiced Apple", "desc": "6 soy wax cubes. Apple & cinnamon. Like a warm apple pie! Lasts 20+ hours.", "price": 5.00, "category": "waxmelts" },
+    { "name": "Fresh Linen", "desc": "6 soy wax cubes. Clean cotton & fresh laundry smell. Lasts 20+ hours.", "price": 4.50, "category": "waxmelts" },
+    { "name": "Chocolate Fudge", "desc": "6 soy wax cubes. Rich chocolatey goodness! Lasts 20+ hours.", "price": 5.00, "category": "waxmelts" },
+    { "name": "Banana Bread", "desc": "6 soy wax cubes. Warm banana & vanilla. Yummy! Lasts 20+ hours.", "price": 5.00, "category": "waxmelts" }
+  ],
+  "3D Prints": [
+    { "name": "Custom Keychain", "desc": "Personalised 3D printed keychain. Send me your design or name! Many colors available.", "price": 3.00, "category": "3dprints" },
+    { "name": "Phone Stand", "desc": "Sleek 3D printed phone stand. Holds your phone at the perfect angle. Many colors!", "price": 6.00, "category": "3dprints" },
+    { "name": "Desk Organizer", "desc": "3D printed pen & pencil holder. Keeps your desk tidy! Many colors.", "price": 7.50, "category": "3dprints" },
+    { "name": "Custom Name Plaque", "desc": "Personalised name plaque for doors or desk. Choose font & color. Great for bedrooms!", "price": 8.00, "category": "3dprints" },
+    { "name": "Headphone Hook", "desc": "3D printed headphone cable hook. Stick it anywhere with 3M tape. Many colors.", "price": 4.00, "category": "3dprints" },
+    { "name": "Mini Action Figure", "desc": "Custom mini me! Send a photo or description and Jaxon will design it. Perfect gift!", "price": 12.00, "category": "3dprints" },
+    { "name": "Pokemon Style Figure", "desc": "Jaxon designs cute character figures! Ask for your favorite. Custom colors.", "price": 10.00, "category": "3dprints" },
+    { "name": "Plant Pot", "desc": "Cute 3D printed mini plant pot. Great for succulents! Many colors.", "price": 5.50, "category": "3dprints" }
+  ]
+}
