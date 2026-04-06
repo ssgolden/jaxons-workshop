@@ -20,8 +20,8 @@ app.set('io', io);
 const PORT = process.env.PORT || 3006;
 
 // Middleware
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: '25mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '25mb' }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '.')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
